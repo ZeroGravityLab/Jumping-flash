@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local CameraConfig = require(ReplicatedStorage.Config.Camera)
+local Movement = require(ReplicatedStorage.Config.Movement)
 local Signal = require(ReplicatedStorage.Shared.Signal)
 
 local player = Players.LocalPlayer
@@ -13,7 +14,26 @@ local player = Players.LocalPlayer
 local SkyCamera = {
 	mode = CameraConfig.DefaultMode, -- "Sky" | "First"
 	onModeChanged = Signal.new(),
+	shakeEnabled = true, -- 멀미에 약한 사람을 위해 설정에서 끌 수 있게 둔다
 }
+
+local fallEffect = 0 -- 0~1, 빠르게 떨어질수록 커진다
+
+-- 빠른 낙하: 시야가 넓어지고 화면이 미세하게 떨린다 (고소공포 연출)
+local function fallKick(hop, dt: number): (number, Vector3)
+	local target = math.clamp((-hop.verticalSpeed() - 30) / (Movement.TerminalFall - 30), 0, 1)
+	fallEffect += (target - fallEffect) * (1 - math.exp(-6 * dt))
+	local fovBonus = CameraConfig.FallFovBonus * fallEffect
+	local shake = Vector3.zero
+	if SkyCamera.shakeEnabled and fallEffect > CameraConfig.FallShakeFrom then
+		local amount = CameraConfig.FallShake
+			* (fallEffect - CameraConfig.FallShakeFrom)
+			/ (1 - CameraConfig.FallShakeFrom)
+		local t = os.clock() * 14
+		shake = Vector3.new(math.noise(t, 0.3), math.noise(0.7, t), math.noise(t, 1.9)) * amount
+	end
+	return fovBonus, shake
+end
 
 local PITCH_MIN = math.rad(CameraConfig.PitchMin)
 local PITCH_MAX = math.rad(CameraConfig.PitchMax)
@@ -90,7 +110,8 @@ local function update(hop, dt: number)
 
 	local rotation = CFrame.fromEulerAnglesYXZ(math.clamp(pitch - autoPitch, PITCH_MIN, PITCH_MAX), yaw, 0)
 	local altitude01 = math.clamp(hop.altitude() / CameraConfig.SkyCamAltitude, 0, 1)
-	camera.FieldOfView = CameraConfig.Fov + (CameraConfig.FovMax - CameraConfig.Fov) * altitude01
+	local fovBonus, shake = fallKick(hop, dt)
+	camera.FieldOfView = CameraConfig.Fov + (CameraConfig.FovMax - CameraConfig.Fov) * altitude01 + fovBonus
 
 	if SkyCamera.mode == "First" then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
@@ -98,7 +119,7 @@ local function update(hop, dt: number)
 		root.CFrame = CFrame.new(root.Position) * CFrame.fromEulerAnglesYXZ(0, yaw, 0)
 		setCharacterHidden(character, true)
 		local eye = root.Position + Vector3.new(0, CameraConfig.FirstPersonHeight, 0)
-		camera.CFrame = CFrame.new(eye) * rotation
+		camera.CFrame = CFrame.new(eye + shake) * rotation
 		camera.Focus = CFrame.new(eye)
 	else
 		UserInputService.MouseBehavior = if rotating
@@ -112,7 +133,7 @@ local function update(hop, dt: number)
 		if hit then
 			back = back.Unit * math.max(0.5, (hit.Position - focus).Magnitude - 0.5)
 		end
-		camera.CFrame = CFrame.new(focus + back) * rotation
+		camera.CFrame = CFrame.new(focus + back + shake) * rotation
 		camera.Focus = CFrame.new(focus)
 	end
 end

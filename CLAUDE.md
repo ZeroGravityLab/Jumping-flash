@@ -5,9 +5,9 @@ Roblox 수직 하이점프 3D 플랫포머 (글로벌 출시, 기본 영어). 1�
 
 ## 현재 단계
 
-- **W1 토이 프로토타입** (2026-11-02 착수). 그레이박스에서 이동만으로 재미를 판정한다 (GDD 15장 토이 게이트).
-- 토이 범위: 3단 점프·정점 퍼펙트·스톰프·반동, 스카이 캠/1인칭 전환, 다이브 캠, 착지 마커, HUD, 그레이박스 놀이터. 저장·재화·라운드·서버 검증은 없다.
-- 토이 게이트를 통과하기 전에는 W2 기능(의뢰 시스템, 저장)과 W3 기능(클라우드 러시, 청크)을 만들지 않는다. 단계가 바뀌면 이 섹션을 갱신한다.
+- **W2 진행 중** (2026-11-04, 사용자 요청으로 토이 게이트 전에 착수). 떠 있는 섬 월드(허브·1장), 아찔함 연출, 의뢰 시스템 골격(튜토리얼 3 + 1장 3)까지 만들었다.
+- 토이 게이트(사람 손맛 테스트, GDD 15장)는 아직 남아 있다. W3 기능(클라우드 러시, 청크)은 요청 전에 만들지 않는다. 단계가 바뀌면 이 섹션을 갱신한다.
+- 외부 에셋은 [ASSETS.md](ASSETS.md)의 규칙(정화·배율·place 저장)을 따른다.
 
 ## 오리지널리티
 
@@ -35,20 +35,26 @@ Roblox 수직 하이점프 3D 플랫포머 (글로벌 출시, 기본 영어). 1�
 
 ```
 default.project.json          Rojo 매핑. servePort 34873 (34872는 다른 프로젝트의 rojo serve가 쓴다),
-                              StarterPlayer.EnableMouseLockOption = false (카메라는 SkyCamera가 맡는다)
+                              StarterPlayer.EnableMouseLockOption = false (카메라는 SkyCamera가 맡는다),
+                              Lighting.LightingStyle, Workspace.FallenPartsDestroyHeight (ASSETS.md 참고)
 rokit.toml                    도구 버전 고정 (rojo, lune, stylua, selene)
 .mcp.json                     Roblox Studio 내장 MCP 서버 (Studio에서 Enable Studio as MCP server를 켜야 동작)
 src/
   ReplicatedStorage/
-    Config/                   Movement, Camera — 순수 데이터 테이블만
-    Shared/                   MovementLogic, ToyStats (순수 함수), Strings, Tags, Signal
+    Config/                   Movement, Camera, World(섬 배치), Requests(주민·의뢰) — 순수 데이터 테이블만
+    Shared/                   MovementLogic, WorldGen, RequestLogic, ToyStats (순수 함수),
+                              Strings, Tags, Signal, Remotes(이름만, 인스턴스는 Services/Net이 만든다)
   ServerScriptService/
-    Main.server.luau          중력 적용, 놀이터 생성
-    Toy/Playground.luau       토이 전용 그레이박스. W2에 청크 시스템(GDD 8.1)으로 대체
+    Main.server.luau          부트스트랩: 서비스 시작 → 월드 생성 → 캐릭터 생성 허용
+    World/                    WorldBuilder(조립), IslandTerrain, Decor(무료 에셋 배치), Features(이동 장치),
+                              Clouds, Sky(조명·대기), Residents(주민 NPC)
+    Services/                 Net(Remote·빈도 제한), DataService, EconomyService, RequestService
   StarterPlayer/StarterPlayerScripts/
     Main.client.luau          클라이언트 부트스트랩
-    Movement/                 HopController, SkyCamera, LandingMarker, Effects
-    UI/Hud.luau
+    Movement/                 HopController, SkyCamera, LandingMarker, Effects, Vertigo(아찔함), Ambience(풍경 움직임)
+    Requests/                 RequestController(대화·서버 확인), Objectives(유형별 목표)
+    UI/                       Hud, RequestUi
+ServerStorage.Assets          무료 에셋. Rojo 밖, place 파일에만 있다 (ASSETS.md)
 tests/
   init.luau                   러너 (`lune run tests`)
   check.luau                  단언 헬퍼
@@ -77,8 +83,9 @@ tests/
 
 ## 테스트와 검증
 
-- `lune run tests`: MovementLogic(점프 높이, 퍼펙트 판정, 탄도), Strings(언어별 키·형식 일치), ToyStats.
-- `selene src`, `stylua --check src tests`, `rojo build -o build/Skyhop.rbxlx`.
+- `lune run tests`: MovementLogic(점프 높이, 퍼펙트 판정, 탄도), WorldGen(섬 모양·배치·나선 섬 도달 거리), RequestLogic(메달·종 게이지·보상), Strings(언어별 키·형식 일치), ToyStats.
+- `selene src`, `stylua --check src tests`, `rojo build -o build/check.rbxlx`.
+- **`build/Skyhop.rbxlx`는 작업용 place다.** 에셋이 이 파일에만 있으므로 `rojo build`로 덮어쓰지 않는다. Studio에서 바꾼 뒤에는 Ctrl+S로 저장한다.
 - 기능 완료 체크리스트:
   1. 수치는 Config에 있다
   2. 린트·테스트·빌드 통과

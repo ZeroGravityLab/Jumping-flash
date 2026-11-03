@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local CameraConfig = require(ReplicatedStorage.Config.Camera)
 local Movement = require(ReplicatedStorage.Config.Movement)
 local MovementLogic = require(ReplicatedStorage.Shared.MovementLogic)
 local Strings = require(ReplicatedStorage.Shared.Strings)
@@ -19,6 +20,7 @@ local COLOR = {
 	Text = Color3.fromRGB(255, 255, 255),
 	Stroke = Color3.fromRGB(40, 60, 90),
 	Perfect = Color3.fromRGB(255, 205, 60),
+	Drop = Color3.fromRGB(190, 225, 255),
 	Stomp = Color3.fromRGB(255, 140, 210),
 	Pad = Color3.fromRGB(255, 220, 90),
 	Buddy = Color3.fromRGB(130, 255, 170),
@@ -86,12 +88,36 @@ local function clock(seconds: number): string
 	return string.format("%d:%02d", whole // 60, whole % 60)
 end
 
-function Hud.start(hop, skyCamera, landingMarker)
+-- 구름 바다로 떨어졌다 돌아올 때 하얗게 덮었다 걷어 낸다
+local function buildFade(): Frame
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "SkyhopFade"
+	gui.IgnoreGuiInset = true
+	gui.ResetOnSpawn = false
+	gui.DisplayOrder = 10
+	gui.Parent = player:WaitForChild("PlayerGui")
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.fromScale(1, 1)
+	frame.BackgroundColor3 = Color3.fromRGB(248, 250, 255)
+	frame.BackgroundTransparency = 1
+	frame.BorderSizePixel = 0
+	frame.Parent = gui
+	return frame
+end
+
+function Hud.start(hop, skyCamera, landingMarker, vertigo)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "SkyhopHud"
 	gui.ResetOnSpawn = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = player:WaitForChild("PlayerGui")
+
+	local respawnFade = buildFade()
+	hop.onRespawn:Connect(function()
+		respawnFade.BackgroundTransparency = 0
+		TweenService:Create(respawnFade, TweenInfo.new(1.2, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
+			:Play()
+	end)
 
 	-- 고도
 	local altitude = newLabel(gui, {
@@ -106,6 +132,17 @@ function Hud.start(hop, skyCamera, landingMarker)
 		Size = UDim2.fromOffset(260, 24),
 		TextSize = 20,
 	})
+	-- 발밑 깊이: 허공 위에 있을 때만 보여 아찔함을 숫자로 느끼게 한다
+	local drop = newLabel(gui, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 84),
+		Size = UDim2.fromOffset(300, 26),
+		TextSize = 22,
+		TextColor3 = COLOR.Drop,
+		TextTransparency = 1,
+	})
+	local dropStroke = drop:FindFirstChildOfClass("UIStroke")
+	local dropAlpha = 0
 
 	-- 남은 점프
 	local pipRow = Instance.new("Frame")
@@ -281,6 +318,12 @@ function Hud.start(hop, skyCamera, landingMarker)
 	RunService.RenderStepped:Connect(function(dt)
 		altitude.Text = t("Altitude", math.round(hop.altitude()))
 		best.Text = t("Best", math.round(hop.stats.maxAltitude))
+
+		local showDrop = vertigo.drop >= CameraConfig.DropMeterMin and (not hop.isGrounded() or vertigo.edge)
+		dropAlpha += ((if showDrop then 1 else 0) - dropAlpha) * (1 - math.exp(-8 * dt))
+		drop.Text = t("DropBelow", math.round(vertigo.drop))
+		drop.TextTransparency = 1 - dropAlpha
+		dropStroke.Transparency = 1 - dropAlpha
 
 		local left = hop.jumpsLeft()
 		for index, pip in pips do

@@ -19,6 +19,7 @@ local HopController = {
 	onBounce = Signal.new(), -- (kind: "stomp" | "pad" | "buddy", combo, feetPosition)
 	onLand = Signal.new(), -- (stomped, feetPosition)
 	onBell = Signal.new(), -- (feetPosition)
+	onRespawn = Signal.new(), -- 구름 바다로 떨어져 되돌아왔을 때
 	stats = {
 		startedAt = os.clock(),
 		airJumps = {}, -- ToyStats.AirJump 목록
@@ -44,6 +45,8 @@ local bufferedJumpAt = -math.huge
 local launchVelocity: number? = nil -- Humanoid가 덧붙인 초속을 되돌릴 목표값
 local lastBellAt = -math.huge
 local nearBell = false
+local safePosition: Vector3? = nil -- 떨어졌을 때 돌아올 곳: 마지막으로 가장자리가 아닌 땅에 서 있던 자리
+local lastSafeCheckAt = 0
 
 local cloudParts, updraftParts, bellParts
 
@@ -156,12 +159,37 @@ local function resetAirState()
 	humanoid.JumpPower = Movement.JumpVelocity[1]
 end
 
-local function respawnAtSpawn()
-	local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
-	local target = if spawn then spawn.CFrame + Vector3.new(0, 5, 0) else CFrame.new(0, 20, 0)
+local function respawnAfterFall()
+	local target
+	if safePosition then
+		target = CFrame.new(safePosition + Vector3.new(0, 3, 0))
+	else
+		local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+		target = if spawn then spawn.CFrame + Vector3.new(0, 5, 0) else CFrame.new(0, 20, 0)
+	end
 	character:PivotTo(target)
 	root.AssemblyLinearVelocity = Vector3.zero
 	resetAirState()
+	HopController.onRespawn:Fire()
+end
+
+local safeParams = RaycastParams.new()
+safeParams.FilterType = Enum.RaycastFilterType.Exclude
+
+-- 발밑 사방이 모두 땅이면(가장자리가 아니면) 돌아올 자리로 기억한다
+local function rememberSafeGround(now: number)
+	if now - lastSafeCheckAt < 0.5 then
+		return
+	end
+	lastSafeCheckAt = now
+	safeParams.FilterDescendantsInstances = { character, HopController.localFolder }
+	local feet = HopController.feetPosition()
+	for _, offset in { Vector3.new(4, 0, 0), Vector3.new(-4, 0, 0), Vector3.new(0, 0, 4), Vector3.new(0, 0, -4) } do
+		if not workspace:Raycast(feet + offset + Vector3.new(0, 2, 0), Vector3.new(0, -8, 0), safeParams) then
+			return
+		end
+	end
+	safePosition = root.Position
 end
 
 local function onJumpPressed()
@@ -311,7 +339,7 @@ local function step(dt: number)
 	local now = os.clock()
 
 	if root.Position.Y < Movement.FallResetY then
-		respawnAtSpawn()
+		respawnAfterFall()
 		return
 	end
 
@@ -359,6 +387,9 @@ local function step(dt: number)
 		lastGroundedAt = now
 		humanoid.WalkSpeed = Movement.AirSpeed
 	end
+	if grounded and onFloor then
+		rememberSafeGround(now)
+	end
 
 	if humanoid.JumpPower ~= Movement.JumpVelocity[1] and now - lastLaunchAt > Movement.GroundLockTime then
 		humanoid.JumpPower = Movement.JumpVelocity[1]
@@ -390,6 +421,8 @@ local function onStateChanged(_, newState: Enum.HumanoidStateType)
 end
 
 local function onCharacterAdded(newCharacter: Model)
+	-- 첫 캐릭터가 아니면 죽었다 되살아난 것이다. 낙하 복귀와 같이 알린다 (진행 중 의뢰 실패)
+	local revived = character ~= nil
 	humanoid, root = nil, nil
 	character = newCharacter
 	humanoid = newCharacter:WaitForChild("Humanoid")
@@ -398,6 +431,10 @@ local function onCharacterAdded(newCharacter: Model)
 	resetAirState()
 	humanoid.WalkSpeed = Movement.WalkSpeed
 	humanoid.StateChanged:Connect(onStateChanged)
+	if revived then
+		safePosition = nil
+		HopController.onRespawn:Fire()
+	end
 end
 
 function HopController.start()

@@ -32,4 +32,19 @@ return {
 	MarkerEnabled = true,
 	MarkerPredictSeconds = 4,
 	MarkerStep = 0.05,
+
+	-- 아찔함 (사용자 요청 2026-11-04: 높이 뛰면 고소공포가 느껴질 만큼)
+	-- fall은 낙하 속도(종단 속도에서 1), void는 발밑 깊이(VoidDepthFull에서 1)
+	FallFovBonus = 16, -- 종단 속도로 떨어질 때 넓어지는 시야(도)
+	FallShake = 0.16, -- 최대 화면 흔들림(studs). 설정에서 끌 수 있게 한다
+	FallShakeFrom = 0.55, -- fall이 이 값을 넘으면 흔들리기 시작
+	VoidDepthFull = 600,
+	VoidMinDepth = 40, -- 발밑이 이보다 얕으면 아찔함 연출을 하지 않는다
+	EdgeProbeDistance = 6, -- 바라보는 방향으로 이만큼 앞이 허공이면 "가장자리"
+	EdgeIntensity = 0.45,
+	WindVolumeMin = 0.03,
+	WindVolumeMax = 0.9,
+	VignetteMax = 0.5,
+	SpeedLineRate = 160,
+	DropMeterMin = 60, -- 발밑이 이보다 깊을 때만 "아래로 n m"를 보여 준다
 }

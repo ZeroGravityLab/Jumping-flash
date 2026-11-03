@@ -31,5 +31,5 @@ return {
 	BellRadius = 14,
 	BellCooldown = 3,
 	AltitudeZeroY = 0, -- 고도 0 m 기준 높이 (광장 윗면)
-	FallResetY = -120,
+	FallResetY = -600, -- 구름 바다(World.CloudSeaY) 속. 길게 떨어지는 동안의 아찔함이 연출의 일부다
 }

@@ -59,11 +59,13 @@ local function ring(position: Vector3, color: Color3, fromSize: number, toSize: 
 	Debris:AddItem(part, duration + 0.1)
 end
 
--- 기본 캐릭터 점프음을 끄고 단계별 음으로 대신한다
+-- 기본 캐릭터 점프음은 단계별 음으로, 낙하음은 Vertigo의 바람 소리로 대신한다
+local MUTED_DEFAULT_SOUNDS = { Jumping = true, FreeFalling = true }
+
 local function muteDefaultJumpSound(character: Model)
 	local root = character:WaitForChild("HumanoidRootPart")
 	local function mute(child: Instance)
-		if child:IsA("Sound") and child.Name == "Jumping" then
+		if child:IsA("Sound") and MUTED_DEFAULT_SOUNDS[child.Name] then
 			child.Volume = 0
 		end
 	end

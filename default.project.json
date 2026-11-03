@@ -9,6 +9,17 @@
 		"ServerScriptService": {
 			"$path": "src/ServerScriptService"
 		},
+		"Lighting": {
+			"$properties": {
+				"LightingStyle": "Realistic",
+				"PrioritizeLightingQuality": false
+			}
+		},
+		"Workspace": {
+			"$properties": {
+				"FallenPartsDestroyHeight": -2000
+			}
+		},
 		"StarterPlayer": {
 			"$properties": {
 				"EnableMouseLockOption": false

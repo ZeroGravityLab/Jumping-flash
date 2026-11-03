@@ -3,8 +3,10 @@ local process = require("@lune/process")
 
 local specs = {
 	MovementLogic = require("@self/MovementLogic.spec"),
+	RequestLogic = require("@self/RequestLogic.spec"),
 	Strings = require("@self/Strings.spec"),
 	ToyStats = require("@self/ToyStats.spec"),
+	WorldGen = require("@self/WorldGen.spec"),
 }
 
 local passed, failed = 0, 0
