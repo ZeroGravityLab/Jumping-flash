@@ -1,0 +1,13 @@
+# Roblox place files (Rojo로 빌드하는 산출물)
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+build/
+
+# 도구 생성물
+sourcemap.json
+roblox.yml
+
+# luau-lsp용 Roblox 타입 정의 (내려받은 파일)
+globalTypes*.d.luau

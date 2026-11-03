@@ -1,0 +1,15 @@
+-- 클라이언트 부트스트랩 (토이 단계)
+local Movement = script.Parent:WaitForChild("Movement")
+local UI = script.Parent:WaitForChild("UI")
+
+local HopController = require(Movement:WaitForChild("HopController"))
+local SkyCamera = require(Movement:WaitForChild("SkyCamera"))
+local LandingMarker = require(Movement:WaitForChild("LandingMarker"))
+local Effects = require(Movement:WaitForChild("Effects"))
+local Hud = require(UI:WaitForChild("Hud"))
+
+HopController.start()
+SkyCamera.start(HopController)
+LandingMarker.start(HopController)
+Effects.start(HopController)
+Hud.start(HopController, SkyCamera, LandingMarker)
