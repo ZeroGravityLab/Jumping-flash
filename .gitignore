@@ -3,7 +3,9 @@
 *.rbxlx
 *.rbxl.lock
 *.rbxlx.lock
-build/
+build/*
+# 작업용 place는 무료 에셋의 유일한 사본이라 git에 둔다 (ASSETS.md)
+!build/Skyhop.rbxlx
 
 # 도구 생성물
 sourcemap.json

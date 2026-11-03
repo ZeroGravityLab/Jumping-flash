@@ -2,6 +2,7 @@
 
 배경·개체 모델은 Roblox Creator Store의 무료 모델을 쓴다. 모델은 Studio place의 `ServerStorage.Assets`에 들어 있고 **Rojo가 관리하지 않는다.**
 place 파일(`build/Skyhop.rbxlx`)을 저장해야 유지된다. **`rojo build -o build/Skyhop.rbxlx`로 덮어쓰지 말 것** (검증 빌드는 다른 파일 이름으로).
+이 파일은 에셋의 유일한 사본이라 git에 넣는다(.gitignore 예외, 2026-11-04부터). 에셋이나 place 설정을 바꾸면 Studio에서 저장한 뒤 함께 커밋한다.
 
 ## 정화 규칙 (가져올 때마다)
 1. 허용 클래스 외(Script, LocalScript, ModuleScript, RemoteEvent/Function, GUI, Sound 등)는 모두 삭제

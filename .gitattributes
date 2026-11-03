@@ -1,1 +1,4 @@
 * text=auto eol=lf
+# place 파일은 Studio가 통째로 다시 쓰므로 줄 단위 diff·병합을 하지 않는다
+*.rbxl binary
+*.rbxlx binary
