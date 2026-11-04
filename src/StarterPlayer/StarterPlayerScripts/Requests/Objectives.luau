@@ -1,4 +1,4 @@
--- 의뢰 유형별 목표 (GDD 6.5): Collect 수집, Beacons 봉화, Rings 고리 다이빙, Delivery 배달, Murk 머크 청소.
+-- 의뢰 유형별 목표 (GDD 6.5): Collect 수집, Beacons 봉화, Rings 고리 다이빙, Delivery 배달, Murk 머크 청소, Race 경주.
 -- 목표 오브젝트는 이 플레이어에게만 보이게 hop.localFolder에 만든다 (GDD 6.4)
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,6 +30,11 @@ local COLOR = {
 	Pupil = Color3.fromRGB(30, 24, 40),
 	Poof = Color3.fromRGB(255, 255, 255),
 	Pin = Color3.fromRGB(200, 160, 110),
+	Knot = Color3.fromRGB(255, 255, 255),
+	Kite = Color3.fromRGB(255, 110, 90),
+	KiteTrim = Color3.fromRGB(255, 220, 90),
+	Spar = Color3.fromRGB(150, 110, 70),
+	Finish = Color3.fromRGB(255, 205, 60),
 }
 local CLOTH_COLORS = {
 	Color3.fromRGB(120, 180, 240),
@@ -43,9 +48,12 @@ local BEACON_RADIUS = 8
 local RING_RADIUS = 9
 local DELIVERY_RADIUS = 9
 local MURK_SIZE = 7
+local FINISH_RADIUS = 14 -- 경주 결승점: 수평 반경, 발 높이는 결승점 -3 ~ +14
+local KITE_HOVER = 8 -- 연이 결승점 위 이만큼에 닿는다
 
 export type Callbacks = {
 	progress: (done: number, total: number) -> (),
+	countdown: (seconds: number) -> (), -- 경주: 연이 닿기까지 남은 초
 	success: () -> (),
 	fail: (reasonKey: string) -> (),
 	notice: (key: string) -> (), -- 실패는 아니지만 알려 줄 일
@@ -166,12 +174,110 @@ local function laundry(position: Vector3, parent: Instance, index: number): Mode
 	return model
 end
 
+-- 연 꼬리 리본 (나비 매듭)
+local function ribbon(position: Vector3, parent: Instance, index: number): Model
+	local model = Instance.new("Model")
+	local color = CLOTH_COLORS[(index - 1) % #CLOTH_COLORS + 1]
+	local knot = part({
+		Name = "Knot",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.new(0.9, 0.9, 0.9),
+		Color = COLOR.Knot,
+		CFrame = CFrame.new(position),
+		Parent = model,
+	})
+	for _, side in { -1, 1 } do
+		part({
+			Name = "Loop",
+			Size = Vector3.new(1.8, 1.3, 0.3),
+			Color = color,
+			Material = Enum.Material.Fabric,
+			CFrame = CFrame.new(position + Vector3.new(side * 1.2, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(side * 20)),
+			Parent = model,
+		})
+		part({
+			Name = "Tail",
+			Size = Vector3.new(0.5, 2.2, 0.2),
+			Color = color,
+			Material = Enum.Material.Fabric,
+			CFrame = CFrame.new(position + Vector3.new(side * 0.6, -1.3, 0)) * CFrame.Angles(0, 0, math.rad(side * 18)),
+			Parent = model,
+		})
+	end
+	local light = Instance.new("PointLight")
+	light.Range = 10
+	light.Brightness = 1.2
+	light.Color = color
+	light.Parent = knot
+	model.WorldPivot = CFrame.new(position)
+	model.Parent = parent
+	return model
+end
+
 local COLLECT_ITEMS = {
 	Letter = function(position: Vector3, parent: Instance, _: number): Model
 		return letter(position, parent)
 	end,
 	Laundry = laundry,
+	Ribbon = ribbon,
 }
+
+-- 경주 상대인 연. 원점 기준(앞면이 -Z)으로 만들고 꼬리는 Trail로 그린다
+local function kite(parent: Instance): Model
+	local model = Instance.new("Model")
+	local sail = part({
+		Name = "Sail",
+		Size = Vector3.new(6, 6, 0.2),
+		Color = COLOR.Kite,
+		CFrame = CFrame.Angles(0, 0, math.rad(45)),
+		Parent = model,
+	})
+	part({
+		Name = "Trim",
+		Size = Vector3.new(2.6, 2.6, 0.2),
+		Color = COLOR.KiteTrim,
+		CFrame = CFrame.new(0, 0, -0.15) * CFrame.Angles(0, 0, math.rad(45)),
+		Parent = model,
+	})
+	local spine = part({
+		Name = "Spar",
+		Size = Vector3.new(0.25, 8.5, 0.25),
+		Color = COLOR.Spar,
+		CFrame = CFrame.new(0, 0, 0.2),
+		Parent = model,
+	})
+	part({
+		Name = "Spar",
+		Size = Vector3.new(8.5, 0.25, 0.25),
+		Color = COLOR.Spar,
+		CFrame = CFrame.new(0, 0, 0.2),
+		Parent = model,
+	})
+	-- 꼬리는 아래 꼭짓점에서 나온다 (두 어태치먼트 간격이 꼬리 폭)
+	local top = Instance.new("Attachment")
+	top.Position = Vector3.new(0, -3.9, 0)
+	top.Parent = spine
+	local bottom = Instance.new("Attachment")
+	bottom.Position = Vector3.new(0, -4.7, 0)
+	bottom.Parent = spine
+	local tail = Instance.new("Trail")
+	tail.Attachment0 = top
+	tail.Attachment1 = bottom
+	tail.Color = ColorSequence.new(COLOR.KiteTrim, COLOR.Kite)
+	tail.Transparency = NumberSequence.new(0, 1)
+	tail.Lifetime = 0.9
+	tail.FaceCamera = true
+	tail.LightEmission = 0.4
+	tail.Parent = sail
+	local light = Instance.new("PointLight")
+	light.Range = 16
+	light.Brightness = 1.5
+	light.Color = COLOR.KiteTrim
+	light.Parent = sail
+	model.WorldPivot = CFrame.new()
+	model.Parent = parent
+	return model
+end
 
 -- 배달 물건. 원점 기준으로 만들어 머리 위로 옮긴다. fail은 밟았을 때 보여 줄 문자열 키
 local function carriedPot(parent: Instance): Model
@@ -637,6 +743,80 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 				done = 0
 				callbacks.progress(0, total)
 				callbacks.notice("MurkRegrow")
+			end)
+		)
+	elseif request.type == "Race" then
+		local goal = Objectives.resolve(request.target, islandId, exclude)
+		local root = hop.rootPart()
+		-- 연은 플레이어 머리 위에서 출발해 points를 지나 결승점 위로 간다
+		local path = { (if root then root.Position else goal) + Vector3.new(0, 10, 0) }
+		for _, spec in request.points do
+			local p = Objectives.resolve(spec, islandId, exclude)
+			if p then
+				table.insert(path, p)
+			end
+		end
+		table.insert(path, goal + Vector3.new(0, KITE_HOVER, 0))
+		local reach = { 0 } -- 출발점에서 각 지점까지의 경로 길이
+		for i = 2, #path do
+			reach[i] = reach[i - 1] + (path[i] - path[i - 1]).Magnitude
+		end
+		local length = reach[#path]
+
+		part({
+			Name = "Pillar",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(120, 3, 3),
+			Color = COLOR.Finish,
+			Material = Enum.Material.Neon,
+			Transparency = 0.6,
+			CFrame = CFrame.new(goal + Vector3.new(0, 60, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = folder,
+		})
+		paint(ring(goal + Vector3.new(0, 1, 0), folder), COLOR.Finish)
+		local flyer = kite(folder)
+		local startedAt = os.clock()
+		local shown = -1
+		table.insert(
+			connections,
+			RunService.Heartbeat:Connect(function()
+				local elapsed = os.clock() - startedAt
+				if hop.rootPart() then
+					local feet = hop.feetPosition()
+					local flat = Vector3.new(feet.X - goal.X, 0, feet.Z - goal.Z).Magnitude
+					if flat <= FINISH_RADIUS and feet.Y >= goal.Y - 3 and feet.Y <= goal.Y + 14 then
+						finish(true)
+						return
+					end
+				end
+				if elapsed >= request.kiteTime then
+					finish(false, "FailKiteWon")
+					return
+				end
+				local remaining = math.ceil(request.kiteTime - elapsed)
+				if remaining ~= shown then
+					shown = remaining
+					callbacks.countdown(remaining)
+				end
+
+				local distance = elapsed / request.kiteTime * length
+				local i = 2
+				while i < #path and reach[i] < distance do
+					i += 1
+				end
+				local from, to = path[i - 1], path[i]
+				local span = reach[i] - reach[i - 1]
+				local alpha = if span > 0 then math.clamp((distance - reach[i - 1]) / span, 0, 1) else 1
+				local position = from:Lerp(to, alpha) + Vector3.new(0, math.sin(elapsed * 2.5) * 1.2, 0)
+				local heading = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
+				if heading.Magnitude < 1e-3 then
+					heading = Vector3.new(0, 0, -1)
+				end
+				-- 앞면이 뒤따라오는 플레이어 쪽을 보고, 바람에 흔들린다
+				flyer:PivotTo(
+					CFrame.lookAt(position, position - heading)
+						* CFrame.Angles(math.rad(-20), 0, math.sin(elapsed * 3) * 0.25)
+				)
 			end)
 		)
 	end

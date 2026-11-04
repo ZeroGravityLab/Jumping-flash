@@ -303,6 +303,10 @@ function RequestUi.setProgress(done: number, total: number)
 	trackerProgress.Text = t("Progress", done, total)
 end
 
+function RequestUi.setCountdown(seconds: number)
+	trackerProgress.Text = t("RaceCountdown", seconds)
+end
+
 function RequestUi.setTime(seconds: number)
 	trackerTime.Text = clock(seconds)
 end

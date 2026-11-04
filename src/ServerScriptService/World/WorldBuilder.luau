@@ -30,7 +30,9 @@ local function folderIn(parent: Instance, name: string): Folder
 	return folder
 end
 
--- 이 섬 의뢰의 surface 지점(섬 중심 기준)과 의뢰가 쓰는 위성 섬 번호
+local TREE_CLEAR_HEIGHT = 50 -- 이보다 낮은 공중 지점도 나무 수관에 묻히지 않게 비워 둔다
+
+-- 이 섬 의뢰의 바닥 근처 지점(섬 중심 기준)과 의뢰가 쓰는 위성 섬 번호
 local function requestSpots(islandId: string): ({ any }, { [number]: boolean })
 	local residentIsland = {}
 	for _, resident in Requests.Residents do
@@ -48,6 +50,8 @@ local function requestSpots(islandId: string): ({ any }, { [number]: boolean })
 			end
 			if spec.surface then
 				table.insert(surface, { x = spec.surface[1], z = spec.surface[2] })
+			elseif spec.air and spec.air[2] < TREE_CLEAR_HEIGHT then
+				table.insert(surface, { x = spec.air[1], z = spec.air[3] })
 			elseif spec.satellite then
 				satellites[spec.satellite[1]] = true
 			end

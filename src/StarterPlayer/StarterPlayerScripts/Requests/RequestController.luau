@@ -69,6 +69,7 @@ function RequestController.start(hop, ui)
 		ui.showTracker(request)
 		local cleanup = Objectives.run(request, islandId, hop, {
 			progress = ui.setProgress,
+			countdown = ui.setCountdown,
 			success = function()
 				stopActive()
 				local result = completeRemote:InvokeServer(request.id)

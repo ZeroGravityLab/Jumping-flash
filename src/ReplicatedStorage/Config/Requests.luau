@@ -4,6 +4,7 @@
 -- satellite 좌표 {n, 높이}: 그 섬의 n번째 나선 섬 윗면 위
 -- 좌표에 island를 적으면 주민의 섬 대신 그 섬 기준이다 (섬을 건너는 배달)
 -- item: 수집·배달 물건의 모양 (없으면 편지·화분)
+-- 경주(Race): 연이 플레이어 머리 위에서 출발해 points를 지나 target에 kiteTime초 뒤에 닿는다. 그보다 먼저 target에 닿아야 한다
 -- 시간은 초. minTime보다 빨리 끝난 보고는 서버가 거절한다
 return {
 	MedalCoins = { bronze = 15, silver = 25, gold = 40 },
@@ -17,6 +18,7 @@ return {
 		{ id = "Momo", island = "Skyhaven", x = -44, z = 18, yaw = 120, color = { 240, 170, 150 } },
 		{ id = "Rhea", island = "WindmillMeadow", x = -36, z = 22, yaw = 160, color = { 170, 140, 220 } },
 		{ id = "Bram", island = "WindmillMeadow", x = -4, z = 34, yaw = 150, color = { 214, 180, 110 } },
+		{ id = "Wren", island = "WindmillMeadow", x = 66, z = 8, yaw = 90, color = { 110, 200, 170 } },
 	},
 
 	Requests = {
@@ -162,6 +164,81 @@ return {
 			gold = 32,
 			silver = 55,
 			minTime = 14,
+		},
+		{
+			id = "c1_ribbons",
+			chapter = 1,
+			resident = "Wren",
+			type = "Collect",
+			item = "Ribbon",
+			-- 풍차 꼭대기, 바운스 꽃 위, 퍼플링 줄, 상승 기류 끝, 5·6번 나선 섬
+			points = {
+				{ air = { 22, 118, -18 } },
+				{ air = { 96, 95, -10 } },
+				{ air = { 84, 110, 40 } },
+				{ air = { -38, 240, -52 } },
+				{ satellite = { 5, 3 } },
+				{ satellite = { 6, 3 } },
+			},
+			gold = 60,
+			silver = 100,
+			minTime = 18,
+		},
+		{
+			id = "c1_kite_race",
+			chapter = 1,
+			resident = "Wren",
+			type = "Race",
+			requires = { "c1_ribbons" },
+			-- 지름길: 바운스 꽃(높이 약 12)에서 튀어 오른 뒤 2·3단을 퍼펙트로 뛰면 4번 정원(208)보다 약 42 높이 올라
+			-- 여유 있게 닿는다 (2026-11-04 Studio 실측, 금 4.7초). 퍼펙트가 없으면 약 9만 넘어 가장자리에 아슬아슬하게 걸쳐야 한다.
+			-- 정원 바로 밑에서 뛰면 정원 바닥에 머리를 부딪힌다. 돌아가는 길은 3번 정원을 거친다
+			points = {
+				{ air = { 90, 70, -20 } },
+				{ air = { 100, 150, -50 } },
+			},
+			target = { satellite = { 4, 0 } },
+			kiteTime = 18,
+			gold = 8,
+			silver = 12,
+			minTime = 4,
+		},
+		{
+			id = "c1_kite_murk",
+			chapter = 1,
+			resident = "Wren",
+			type = "Murk",
+			requires = { "c1_kite_race" },
+			-- 퍼플링 줄 옆 연줄에 엉긴 머크. 퍼플링을 밟아 이어 가도 된다
+			points = {
+				{ air = { 28, 14, 56 } },
+				{ air = { 50, 44, 56 } },
+				{ air = { 72, 74, 56 } },
+				{ air = { 94, 104, 56 } },
+				{ air = { 116, 134, 56 } },
+				{ air = { 128, 172, 46 } },
+			},
+			gold = 16,
+			silver = 28,
+			minTime = 6,
+		},
+		{
+			id = "c1_summit_race",
+			chapter = 1,
+			resident = "Wren",
+			type = "Race",
+			requires = { "c1_kite_murk" },
+			-- 연은 나선 섬을 따라 정상(월드 높이 470)의 종까지 오른다. 상승 기류·바운스 꽃·퍼펙트로 앞질러야 한다
+			points = {
+				{ satellite = { 4, 20 } },
+				{ satellite = { 6, 20 } },
+				{ satellite = { 8, 20 } },
+			},
+			target = { air = { 0, 446, 0 } },
+			kiteTime = 55,
+			gold = 30,
+			silver = 42,
+			minTime = 12,
 		},
 	},
 }

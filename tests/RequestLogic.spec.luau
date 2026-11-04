@@ -27,6 +27,22 @@ return {
 		end
 	end,
 
+	["의뢰 유형은 구현된 6종 중 하나다"] = function()
+		local known = { Collect = true, Beacons = true, Rings = true, Delivery = true, Murk = true, Race = true }
+		for _, request in Requests.Requests do
+			check.truthy(known[request.type], request.id .. " has unknown type " .. tostring(request.type))
+		end
+	end,
+
+	["경주는 결승점이 있고, 연은 은메달 기준보다 늦게 닿는다"] = function()
+		for _, request in Requests.Requests do
+			if request.type == "Race" then
+				check.truthy(request.target ~= nil, request.id .. " has no finish")
+				check.truthy(request.kiteTime > request.silver, request.id .. " kite is faster than silver")
+			end
+		end
+	end,
+
 	["선행 의뢰는 실제로 있는 의뢰다"] = function()
 		for _, request in Requests.Requests do
 			for _, id in request.requires or {} do
