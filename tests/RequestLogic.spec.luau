@@ -8,7 +8,7 @@ local check = require("./check")
 local letters = RequestLogic.find(Requests, "tut_letters")
 
 return {
-	["의뢰 id는 겹치지 않고 주민이 실제로 있다"] = function()
+	["의뢰 id는 겹치지 않고 주민이 실제로 있다 (보스는 주민 대신 섬과 이름)"] = function()
 		local seen, residents = {}, {}
 		for _, r in Requests.Residents do
 			residents[r.id] = true
@@ -16,7 +16,35 @@ return {
 		for _, request in Requests.Requests do
 			check.truthy(not seen[request.id], "duplicate " .. request.id)
 			seen[request.id] = true
-			check.truthy(residents[request.resident], request.id .. " has unknown resident")
+			if request.boss then
+				check.truthy(request.resident == nil and request.island ~= nil, request.id .. " boss needs island")
+				check.truthy(Strings.languages.en[request.name] ~= nil, request.id .. " boss name missing")
+			else
+				check.truthy(residents[request.resident], request.id .. " has unknown resident")
+			end
+		end
+	end,
+
+	["장마다 보스가 있고, 보스는 종 게이지가 차야 열린다"] = function()
+		for chapter, spec in Requests.Chapters do
+			local boss = RequestLogic.find(Requests, spec.boss)
+			check.truthy(boss ~= nil and boss.boss and boss.chapter == chapter, "chapter boss")
+			local progress = {}
+			check.equal(RequestLogic.isAvailable(boss, progress, Requests), false)
+			local filled = 0
+			for _, request in Requests.Requests do
+				if request.chapter == chapter and not request.boss and filled < spec.bossAt then
+					progress[request.id] = { medal = "bronze", bestTime = 99 }
+					filled += 1
+				end
+			end
+			check.equal(RequestLogic.isAvailable(boss, progress, Requests), true)
+			check.equal(RequestLogic.isRestored(Requests, chapter, progress), false)
+			-- 보스는 종 게이지·의뢰 수에 들어가지 않는다
+			local before = RequestLogic.bellGauge(Requests, chapter, progress)
+			progress[boss.id] = { medal = "gold", bestTime = 30 }
+			check.equal(RequestLogic.bellGauge(Requests, chapter, progress), before)
+			check.equal(RequestLogic.isRestored(Requests, chapter, progress), true)
 		end
 	end,
 
@@ -28,7 +56,8 @@ return {
 	end,
 
 	["의뢰 유형은 구현된 6종 중 하나다"] = function()
-		local known = { Collect = true, Beacons = true, Rings = true, Delivery = true, Murk = true, Race = true }
+		local known =
+			{ Collect = true, Beacons = true, Rings = true, Delivery = true, Murk = true, Race = true, Boss = true }
 		for _, request in Requests.Requests do
 			check.truthy(known[request.type], request.id .. " has unknown type " .. tostring(request.type))
 		end
@@ -66,7 +95,7 @@ return {
 				table.insert(specs, request.target)
 			end
 			for _, spec in specs do
-				local island = islands[spec.island or residentIsland[request.resident]]
+				local island = islands[spec.island or request.island or residentIsland[request.resident]]
 				check.truthy(island ~= nil, request.id .. " point on unknown island")
 				if spec.surface then
 					local x, z = spec.surface[1], spec.surface[2]
@@ -171,7 +200,7 @@ return {
 		check.truthy(total >= Requests.Chapters[1].bossAt)
 	end,
 
-	["주민 이야기는 그 주민의 실제 의뢰로 끝나고, 문구와 섬 안 소품 자리가 있다"] = function()
+	["이야기(주민·장 복구)는 실제 의뢰로 끝나고, 문구와 섬 안 소품 자리가 있다"] = function()
 		local residents, islands = {}, {}
 		for _, r in Requests.Residents do
 			residents[r.id] = true
@@ -183,7 +212,7 @@ return {
 			local final = RequestLogic.find(Requests, story.final)
 			check.truthy(final ~= nil, story.id .. " final request missing")
 			check.equal(final and final.resident, story.resident)
-			check.truthy(residents[story.showAt], story.id .. " showAt unknown")
+			check.truthy(story.showAt == nil or residents[story.showAt], story.id .. " showAt unknown")
 			local island = islands[story.island]
 			check.truthy(island ~= nil, story.id .. " unknown island")
 			for name, spot in story.spots do
@@ -198,6 +227,19 @@ return {
 				end
 			end
 		end
+	end,
+
+	["하늘 지도는 튜토리얼을 끝내거나 1장 의뢰를 하나라도 끝내면 열린다"] = function()
+		check.equal(RequestLogic.isMapUnlocked(Requests, {}), false)
+		check.equal(RequestLogic.isMapUnlocked(Requests, { tut_letters = { medal = "gold", bestTime = 30 } }), false)
+		check.equal(RequestLogic.isMapUnlocked(Requests, { c1_delivery = { medal = "bronze", bestTime = 60 } }), true)
+		local tutorial = {}
+		for _, request in Requests.Requests do
+			if request.chapter == 0 then
+				tutorial[request.id] = { medal = "bronze", bestTime = 99 }
+			end
+		end
+		check.equal(RequestLogic.isMapUnlocked(Requests, tutorial), true)
 	end,
 
 	["하늘 지도의 섬 이름이 모든 언어에 있다"] = function()

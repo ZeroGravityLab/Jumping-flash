@@ -9,8 +9,9 @@
 return {
 	MedalCoins = { bronze = 15, silver = 25, gold = 40 },
 
+	-- boss: 그 장의 보스 의뢰. 이기면 섬이 되살아난다 (RequestLogic.isRestored)
 	Chapters = {
-		[1] = { island = "WindmillMeadow", bossAt = 6 },
+		[1] = { island = "WindmillMeadow", bossAt = 6, boss = "c1_boss" },
 	},
 
 	-- 주민 이야기 (GDD 6.6): final 의뢰를 처음 끝내면 엔딩 카드가 뜨고 허브가 바뀐다 (그 플레이어에게만).
@@ -26,6 +27,8 @@ return {
 			spots = { stall = { -30, 24 }, bun = { -22, 44 } },
 			house = { -66, 46 }, -- 모모 뒤 집: 굴뚝 연기와 지붕 위 통통 빵
 		},
+		-- 1장 보스를 이기면 풍차 초원이 되살아난다 (먹구름이 걷히고 무지개)
+		{ id = "Chapter1", final = "c1_boss", island = "WindmillMeadow", spots = {} },
 	},
 
 	Residents = {
@@ -254,6 +257,36 @@ return {
 			gold = 30,
 			silver = 42,
 			minTime = 12,
+		},
+		{
+			id = "c1_boss",
+			chapter = 1,
+			boss = true,
+			name = "Boss_Thunderhead",
+			island = "WindmillMeadow",
+			type = "Boss",
+			-- 썬더헤드 (GDD 6.3): 정상(월드 470) 위 먹구름. 구름 발판 7개를 감아 올라 꼭대기 피뢰침 3개를 스톰프한다.
+			-- 오르는 동안 번개가 떨어질 자리가 먼저 빛난다. 좌표는 섬 윗면(월드 24) 기준, 정상 윗면은 air 446
+			gate = { air = { 20, 446, -8 } }, -- 정상의 폭풍 받침대 (도전 프롬프트)
+			center = { air = { 0, 592, 0 } }, -- 먹구름 몸통 중심
+			points = { -- 반경 48 나선, 28씩 오른다
+				{ air = { 48, 476, 0 } },
+				{ air = { 27.5, 504, 39.3 } },
+				{ air = { -16.4, 532, 45.1 } },
+				{ air = { -46.4, 560, 12.4 } },
+				{ air = { -36.8, 588, -30.9 } },
+				{ air = { 4.2, 616, -47.8 } },
+				{ air = { 41.6, 644, -24 } },
+			},
+			rods = { -- 몸통 위 피뢰침 발판
+				{ air = { 20, 672, 10 } },
+				{ air = { -14, 690, 18 } },
+				{ air = { -6, 708, -20 } },
+			},
+			fallBelow = 420, -- 발이 이 air 높이보다 내려가면 실패 (정상 아래로 떨어짐)
+			gold = 45,
+			silver = 75,
+			minTime = 15,
 		},
 	},
 }

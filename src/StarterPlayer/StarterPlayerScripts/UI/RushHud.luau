@@ -350,7 +350,8 @@ function RushHud.start(hop, ui, requestController, skyCamera)
 		bannerSub.Text = sub
 		bannerSub.TextColor3 = subColor
 		-- 의뢰 중에는 같은 자리의 의뢰 진행 표시를 가리지 않게 숨긴다 (탑 위에 있을 때는 의뢰가 이미 취소됐다)
-		banner.Visible = phase ~= nil and (running or not requestController.isActive())
+		-- 대화창·엔딩 카드가 떠 있을 때도 숨긴다 (반투명 카드 뒤로 비쳐 보였다)
+		banner.Visible = phase ~= nil and (running or not (requestController.isActive() or ui.isBusy()))
 		joinButton.Visible = not running
 		joinButton.Text = if joined then t("RushLeave") else t("RushJoin")
 		joinButton.BackgroundColor3 = if joined then COLOR.Leave else COLOR.Join

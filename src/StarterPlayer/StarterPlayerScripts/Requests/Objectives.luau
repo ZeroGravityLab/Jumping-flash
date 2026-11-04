@@ -1,8 +1,11 @@
--- 의뢰 유형별 목표 (GDD 6.5): Collect 수집, Beacons 봉화, Rings 고리 다이빙, Delivery 배달, Murk 머크 청소, Race 경주.
+-- 의뢰 유형별 목표 (GDD 6.5): Collect 수집, Beacons 봉화, Rings 고리 다이빙, Delivery 배달, Murk 머크 청소, Race 경주,
+-- Boss 장 보스 (GDD 6.3, 썬더헤드).
 -- 목표 오브젝트는 이 플레이어에게만 보이게 hop.localFolder에 만든다 (GDD 6.4)
 local CollectionService = game:GetService("CollectionService")
+local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local World = require(ReplicatedStorage.Config.World)
@@ -390,6 +393,108 @@ local function murk(position: Vector3, parent: Instance): (Model, BasePart)
 end
 
 -- 머크가 "퐁" 하고 구름으로 흩어진다 (GDD 6.1)
+local STORM = {
+	Dark = Color3.fromRGB(66, 68, 88),
+	Mid = Color3.fromRGB(96, 98, 122),
+	Eye = Color3.fromRGB(255, 230, 90),
+	Brow = Color3.fromRGB(36, 36, 50),
+	Ledge = Color3.fromRGB(150, 152, 178),
+	Rod = Color3.fromRGB(255, 205, 70),
+	RodSpent = Color3.fromRGB(90, 90, 100),
+	Bolt = Color3.fromRGB(255, 250, 200),
+	Warn = Color3.fromRGB(255, 220, 80),
+}
+local THUNDER_SOUND = "rbxasset://sounds/impact_explosion_03.mp3"
+local ZAP_EVERY = 2.4 -- 번개 사이 간격(초)
+local ZAP_WARNING = 1.1 -- 떨어질 자리가 먼저 빛나는 시간
+local ZAP_RADIUS = 7
+local ROD_RADIUS = 8
+
+local function thunder(speed: number, volume: number)
+	local sound = Instance.new("Sound")
+	sound.SoundId = THUNDER_SOUND
+	sound.PlaybackSpeed = speed
+	sound.Volume = volume
+	sound.Parent = SoundService
+	sound:Play()
+	Debris:AddItem(sound, 4)
+end
+
+-- 썬더헤드 몸통: 먹구름 덩어리와 성난 얼굴(허브 쪽 -X를 본다). 지나갈 수 있고 밟기 판정에도 걸리지 않는다
+function Objectives.stormBody(center: Vector3, parent: Instance): Model
+	local model = Instance.new("Model")
+	model.Name = "Thunderhead"
+	local random = Random.new(13)
+	for i = 1, 20 do
+		local offset = Vector3.new(random:NextNumber(-1, 1), random:NextNumber(-0.6, 0.8), random:NextNumber(-1, 1))
+		local size = random:NextNumber(30, 48)
+		part({
+			Name = "Cloud",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(size, size * 0.8, size),
+			Color = STORM.Dark:Lerp(STORM.Mid, (i % 5) / 4),
+			CFrame = CFrame.new(center + offset.Unit * random:NextNumber(4, 30)),
+			Parent = model,
+		})
+	end
+	-- 얼굴: 노란 눈, 찌푸린 눈썹
+	for _, side in { -1, 1 } do
+		local eye = center + Vector3.new(-38, 8, side * 13)
+		part({
+			Name = "Eye",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(7, 9, 7),
+			Color = STORM.Eye,
+			Material = Enum.Material.Neon,
+			CFrame = CFrame.new(eye),
+			Parent = model,
+		})
+		part({
+			Name = "Brow",
+			Size = Vector3.new(2, 2.2, 12),
+			Color = STORM.Brow,
+			CFrame = CFrame.new(eye + Vector3.new(-2.5, 7, -side * 1.5)) * CFrame.Angles(math.rad(side * 24), 0, 0),
+			Parent = model,
+		})
+	end
+	part({
+		Name = "Frown",
+		Size = Vector3.new(2, 2.4, 18),
+		Color = STORM.Brow,
+		CFrame = CFrame.new(center + Vector3.new(-39, -10, 0)),
+		Parent = model,
+	})
+	-- 몸속에서 번쩍이는 빛
+	local core =
+		part({ Name = "Core", Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(center), Parent = model })
+	local light = Instance.new("PointLight")
+	light.Color = STORM.Bolt
+	light.Range = 60
+	light.Brightness = 0
+	light.Parent = core
+	TweenService
+		:Create(light, TweenInfo.new(0.35, Enum.EasingStyle.Bounce, Enum.EasingDirection.InOut, -1, true, 1.8), {
+			Brightness = 6,
+		})
+		:Play()
+	model.WorldPivot = CFrame.new(center)
+	model.Parent = parent
+	return model
+end
+
+-- 먹구름이 흩어진다 (보스를 이겼을 때)
+function Objectives.dispelStorm(model: Model)
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			TweenService:Create(p, TweenInfo.new(1.4, Enum.EasingStyle.Quad), {
+				Transparency = 1,
+				Size = p.Size * 1.6,
+			}):Play()
+		end
+	end
+	task.delay(1.5, model.Destroy, model)
+end
+
 local function poof(position: Vector3, parent: Instance)
 	local cloud = part({
 		Name = "Poof",
@@ -819,6 +924,160 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 				)
 			end)
 		)
+	elseif request.type == "Boss" then
+		-- 썬더헤드: 먹구름을 감아 오르는 일방향 구름 발판, 꼭대기 피뢰침을 스톰프로 내려앉아 끈다. 오르는 동안 번개
+		local center = Objectives.resolve(request.center, islandId, exclude)
+		local island = islandSpec(islandId)
+		local fallY = island.center[2] + request.fallBelow
+		local body = Objectives.stormBody(center, folder)
+
+		local function ledge(top: Vector3, diameter: number): BasePart
+			local p = part({
+				Name = "StormLedge",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(3, diameter, diameter),
+				Color = STORM.Ledge,
+				CanCollide = true,
+				CanQuery = true,
+				CFrame = CFrame.new(top - Vector3.new(0, 1.5, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+				Parent = solid,
+			})
+			CollectionService:AddTag(p, Tags.Cloud)
+			return p
+		end
+		for _, spec in request.points do
+			local top = Objectives.resolve(spec, islandId, exclude)
+			if top then
+				ledge(top, 18)
+			end
+		end
+		local rods = {}
+		for _, spec in request.rods do
+			local top = Objectives.resolve(spec, islandId, exclude)
+			if top then
+				ledge(top, 14)
+				local rod = part({
+					Name = "Rod",
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(10, 1.2, 1.2),
+					Color = STORM.Rod,
+					Material = Enum.Material.Neon,
+					CFrame = CFrame.new(top + Vector3.new(0, 5, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+					Parent = folder,
+				})
+				local tip = part({
+					Name = "RodTip",
+					Shape = Enum.PartType.Ball,
+					Size = Vector3.new(2.2, 2.2, 2.2),
+					Color = STORM.Rod,
+					Material = Enum.Material.Neon,
+					CFrame = CFrame.new(top + Vector3.new(0, 10.5, 0)),
+					Parent = folder,
+				})
+				local light = Instance.new("PointLight")
+				light.Color = STORM.Rod
+				light.Range = 18
+				light.Brightness = 2
+				light.Parent = tip
+				table.insert(rods, { top = top, parts = { rod, tip }, light = light })
+			end
+		end
+		local total, done = #rods, 0
+		callbacks.progress(0, total)
+
+		-- 피뢰침 발판에 스톰프로 내려앉으면 그 피뢰침이 꺼진다
+		table.insert(
+			connections,
+			hop.onLand:Connect(function(stomped, feet)
+				if not stomped then
+					return
+				end
+				for _, rod in rods do
+					local flat = Vector3.new(feet.X - rod.top.X, 0, feet.Z - rod.top.Z).Magnitude
+					if not rod.spent and flat <= ROD_RADIUS and math.abs(feet.Y - rod.top.Y) <= 6 then
+						rod.spent = true
+						paint(rod.parts, STORM.RodSpent)
+						for _, p in rod.parts do
+							p.Material = Enum.Material.SmoothPlastic
+						end
+						rod.light:Destroy()
+						poof(rod.top + Vector3.new(0, 6, 0), folder)
+						thunder(0.8, 0.5)
+						done += 1
+						callbacks.progress(done, total)
+						if done == total then
+							Objectives.dispelStorm(body)
+							thunder(0.45, 0.8)
+							task.delay(1.2, finish, true)
+						end
+					end
+				end
+			end)
+		)
+
+		-- 정상 아래로 떨어지면 실패
+		table.insert(
+			connections,
+			RunService.Heartbeat:Connect(function()
+				if hop.rootPart() and hop.feetPosition().Y < fallY then
+					finish(false, "FailStorm")
+				end
+			end)
+		)
+
+		-- 번개: 플레이어 발밑 근처가 먼저 빛나고, 잠시 뒤 내리친다. 맞으면 휘청하며 튕겨 나간다
+		local random = Random.new()
+		task.spawn(function()
+			while not finished do
+				task.wait(ZAP_EVERY)
+				if finished or done == total or not hop.rootPart() then
+					continue
+				end
+				local feet = hop.feetPosition()
+				if feet.Y < center.Y - 130 then
+					continue -- 아직 정상에 있다
+				end
+				local angle = random:NextNumber(0, math.pi * 2)
+				local spot = feet + Vector3.new(math.cos(angle), 0, math.sin(angle)) * random:NextNumber(0, 5)
+				local warning = part({
+					Name = "ZapWarning",
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(0.3, ZAP_RADIUS * 2, ZAP_RADIUS * 2),
+					Color = STORM.Warn,
+					Material = Enum.Material.Neon,
+					Transparency = 0.7,
+					CFrame = CFrame.new(spot + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+					Parent = folder,
+				})
+				TweenService:Create(warning, TweenInfo.new(ZAP_WARNING), { Transparency = 0.15 }):Play()
+				task.wait(ZAP_WARNING)
+				if finished then
+					return
+				end
+				warning:Destroy()
+				local bolt = part({
+					Name = "Bolt",
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(90, 1.6, 1.6),
+					Color = STORM.Bolt,
+					Material = Enum.Material.Neon,
+					CFrame = CFrame.new(spot + Vector3.new(0, 45, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+					Parent = folder,
+				})
+				Debris:AddItem(bolt, 0.18)
+				thunder(0.6, 0.6)
+				local root = hop.rootPart()
+				if root then
+					local now = hop.feetPosition()
+					local away = Vector3.new(now.X - spot.X, 0, now.Z - spot.Z)
+					if away.Magnitude <= ZAP_RADIUS and math.abs(now.Y - spot.Y) <= 8 then
+						local push = if away.Magnitude > 0.1 then away.Unit else Vector3.new(1, 0, 0)
+						root.AssemblyLinearVelocity = push * 35 + Vector3.new(0, 45, 0)
+						hop.stagger(0.6, 1, "zap")
+					end
+				end
+			end
+		end)
 	end
 
 	return cleanup

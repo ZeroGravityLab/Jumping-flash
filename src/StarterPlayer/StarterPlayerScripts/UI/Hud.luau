@@ -346,8 +346,12 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
 	hop.onBell:Connect(function()
 		showPopup(t("Bell"), COLOR.Perfect)
 	end)
-	hop.onStaggered:Connect(function()
-		showPopup(t("Stomped"), COLOR.Stomp)
+	hop.onStaggered:Connect(function(_, reason)
+		if reason == "zap" then
+			showPopup(t("BossZapped"), COLOR.Pad)
+		else
+			showPopup(t("Stomped"), COLOR.Stomp)
+		end
 	end)
 
 	local sinceStatsRefresh = 0

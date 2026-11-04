@@ -63,6 +63,10 @@ function RequestController.start(hop, ui)
 		return active ~= nil
 	end
 
+	function RequestController.activeId(): string?
+		return if active then active.request.id else nil
+	end
+
 	-- 하던 의뢰를 그만둔다 (클라우드 러시로 탑에 올라갈 때)
 	function RequestController.cancelActive()
 		if active then
@@ -105,6 +109,8 @@ function RequestController.start(hop, ui)
 		active = { request = request, startedAt = os.clock(), cleanup = cleanup }
 		updateMarkers(markers)
 	end
+	-- 주민이 아닌 곳에서 시작하는 의뢰 (장 보스)
+	RequestController.begin = begin
 
 	local function attachPrompt(prompt: ProximityPrompt)
 		local residentId = prompt:GetAttribute("Resident")

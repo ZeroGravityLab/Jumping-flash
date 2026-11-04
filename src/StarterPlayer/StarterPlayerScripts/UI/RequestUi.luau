@@ -395,6 +395,11 @@ function RequestUi.showStory(storyId: string, onClosed: (() -> ())?)
 	end)
 end
 
+-- 대화창이나 엔딩 카드가 떠 있는가 (다른 화면이 그 뒤에 비치지 않게 숨길 때)
+function RequestUi.isBusy(): boolean
+	return dialog.Visible or storyCard.Visible
+end
+
 function RequestUi.hideStory()
 	storyCard.Visible = false
 	local callback = onStoryClosed

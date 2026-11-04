@@ -21,7 +21,7 @@ local HopController = {
 	onLand = Signal.new(), -- (stomped, feetPosition)
 	onBell = Signal.new(), -- (feetPosition)
 	onRespawn = Signal.new(), -- 구름 바다로 떨어져 되돌아왔을 때
-	onStaggered = Signal.new(), -- (seconds) 러시에서 라이벌에게 밟혀 휘청일 때
+	onStaggered = Signal.new(), -- (seconds, reason?) 휘청일 때 (러시 밟힘, 보스 번개 "zap")
 	stats = {
 		startedAt = os.clock(),
 		airJumps = {}, -- ToyStats.AirJump 목록
@@ -250,9 +250,9 @@ local function onJumpPressed()
 	HopController.onJump:Fire(jump.index, jump.perfect, HopController.feetPosition(), perfectStreak)
 end
 
--- 러시에서 라이벌에게 밟혔다 (서버가 확인한 뒤 RushHud가 부른다): seconds 동안 느리게 걷고 점프할 수 없다.
--- 공중이었다면 공중 점프를 jumpsLost만큼 잃는다
-function HopController.stagger(seconds: number, jumpsLost: number)
+-- 휘청: seconds 동안 느리게 걷고 점프할 수 없다. 공중이었다면 공중 점프를 jumpsLost만큼 잃는다.
+-- reason: nil = 러시에서 라이벌에게 밟힘(서버 확인 뒤 RushHud가 부른다), "zap" = 보스 번개
+function HopController.stagger(seconds: number, jumpsLost: number, reason: string?)
 	if not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -260,7 +260,7 @@ function HopController.stagger(seconds: number, jumpsLost: number)
 	if not grounded then
 		jumpsUsed = math.min(math.max(jumpsUsed, 1) + jumpsLost, MovementLogic.maxJumps(Movement))
 	end
-	HopController.onStaggered:Fire(seconds)
+	HopController.onStaggered:Fire(seconds, reason)
 end
 
 function HopController.stomp()

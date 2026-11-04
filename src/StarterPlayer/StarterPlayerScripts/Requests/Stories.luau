@@ -240,6 +240,39 @@ function BUILDERS.Bakery(story, appear: boolean)
 	end
 end
 
+local RAINBOW = {
+	Color3.fromRGB(255, 96, 96),
+	Color3.fromRGB(255, 170, 70),
+	Color3.fromRGB(255, 230, 90),
+	Color3.fromRGB(110, 220, 110),
+	Color3.fromRGB(90, 160, 255),
+	Color3.fromRGB(170, 110, 240),
+}
+local RAINBOW_RADIUS = 230
+local RAINBOW_SEGMENTS = 24
+
+-- 장 복구 (1장 보스를 이겼다): 되살아난 섬 위에 허브 쪽에서 보이는 무지개. 먹구름이 걷히는 것은 Boss가 맡는다
+function BUILDERS.Chapter1(story, appear: boolean)
+	local center = islandTop(story.island) + Vector3.new(0, 30, 0)
+	for band, color in RAINBOW do
+		local radius = RAINBOW_RADIUS - (band - 1) * 6
+		for k = 1, RAINBOW_SEGMENTS do
+			local a1 = (k - 1) / RAINBOW_SEGMENTS * math.pi
+			local a2 = k / RAINBOW_SEGMENTS * math.pi
+			local p1 = center + Vector3.new(0, math.sin(a1), math.cos(a1)) * radius
+			local p2 = center + Vector3.new(0, math.sin(a2), math.cos(a2)) * radius
+			part({
+				Name = "Rainbow",
+				Size = Vector3.new(1.5, 5.6, (p2 - p1).Magnitude + 0.6),
+				Color = color,
+				Material = Enum.Material.Neon,
+				Transparency = 0.45,
+				CFrame = CFrame.lookAt((p1 + p2) / 2, p2),
+			}, appear)
+		end
+	end
+end
+
 local function refresh(ui, skyMap)
 	if type(player:GetAttribute("RequestProgress")) ~= "string" then
 		return
@@ -252,7 +285,9 @@ local function refresh(ui, skyMap)
 				task.delay(RESULT_WAIT, function()
 					BUILDERS[story.id](story, true)
 					ui.showStory(story.id, function()
-						skyMap.guide(story.showAt)
+						if story.showAt then
+							skyMap.guide(story.showAt)
+						end
 					end)
 				end)
 			else

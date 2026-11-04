@@ -15,6 +15,7 @@ local RequestUi = require(UI:WaitForChild("RequestUi"))
 local SkyMap = require(UI:WaitForChild("SkyMap"))
 local Stories = require(Requests:WaitForChild("Stories"))
 local RushHud = require(UI:WaitForChild("RushHud"))
+local Boss = require(Requests:WaitForChild("Boss"))
 
 HopController.start()
 SkyCamera.start(HopController)
@@ -28,3 +29,4 @@ Hud.start(HopController, SkyCamera, LandingMarker, Vertigo, SkyMap)
 RequestController.start(HopController, RequestUi)
 task.spawn(Stories.start, HopController, RequestUi, SkyMap) -- 섬이 다 지어질 때까지 기다린다
 task.spawn(RushHud.start, HopController, RequestUi, RequestController, SkyCamera) -- 서버의 러시 상태를 기다린다
+task.spawn(Boss.start, HopController, RequestUi, RequestController) -- 섬이 다 지어질 때까지 기다린다

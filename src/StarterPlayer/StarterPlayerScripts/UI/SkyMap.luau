@@ -1,5 +1,6 @@
 -- 하늘 지도 (GDD 6.2·6.4·7.1): 섬과 장 진행, 의뢰가 있는 주민 위치, 길 안내 빛기둥.
--- 튜토리얼(0장)을 끝내면 열린다. M 키, 터치 지도 버튼(Hud), 허브 광장의 지도 탁자로 연다
+-- 튜토리얼(0장)을 끝내거나 1장 이후 의뢰를 하나라도 끝내면 열린다 (RequestLogic.isMapUnlocked).
+-- M 키, 터치 지도 버튼(Hud), 허브 광장의 지도 탁자로 연다
 local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -31,6 +32,8 @@ local COLOR = {
 	Close = Color3.fromRGB(90, 100, 130),
 	-- 주민 상태 (RequestLogic.residentState)와 최고 메달
 	new = Color3.fromRGB(255, 210, 70),
+	boss = Color3.fromRGB(255, 120, 90),
+	storm = Color3.fromRGB(96, 98, 122),
 	locked = Color3.fromRGB(120, 130, 150),
 	gold = Color3.fromRGB(255, 205, 60),
 	silver = Color3.fromRGB(210, 220, 235),
@@ -121,7 +124,25 @@ local function islandSpec(id: string)
 	return nil
 end
 
-local function residentPosition(id: string): Vector3?
+-- 지도 핀은 주민 id 또는 장 보스 의뢰 id다
+local function bossOf(id: string)
+	local request = RequestLogic.find(Requests, id)
+	return if request and request.boss then request else nil
+end
+
+local function displayName(id: string): string
+	local boss = bossOf(id)
+	return if boss then t(boss.name) else id
+end
+
+-- 길 안내 목적지: 주민이 서 있는 곳, 보스는 정상의 폭풍 받침대
+local function targetPosition(id: string): Vector3?
+	local boss = bossOf(id)
+	if boss then
+		local island = islandSpec(boss.island)
+		local air = boss.gate.air
+		return Vector3.new(island.center[1] + air[1], island.center[2] + air[2], island.center[3] + air[3])
+	end
 	local folder = workspace:FindFirstChild("World")
 	local residents = folder and folder:FindFirstChild("Residents")
 	local model = residents and residents:FindFirstChild(id)
@@ -199,10 +220,10 @@ function SkyMap.close()
 	gui.Enabled = false
 end
 
--- 그 주민 머리 위로 빛기둥을 세운다 (이 플레이어에게만 보인다)
+-- 그 주민(또는 보스 받침대) 위로 빛기둥을 세운다 (이 플레이어에게만 보인다)
 function SkyMap.guide(residentId: string)
 	clearGuide()
-	local position = residentPosition(residentId)
+	local position = targetPosition(residentId)
 	if not position then
 		return
 	end
@@ -223,7 +244,32 @@ function SkyMap.guide(residentId: string)
 	guideBeam = beam
 	guideTarget = residentId
 	SkyMap.close()
-	ui.toast(t("MapGuiding", residentId))
+	ui.toast(t("MapGuiding", displayName(residentId)))
+end
+
+-- 보스 핀을 골랐을 때: 열렸으면 의뢰처럼, 아직이면 종 게이지가 얼마나 남았는지
+local function showBossDetail(boss, current)
+	detailName.Text = string.format("%s · %s", t(boss.name), t("Island_" .. boss.island))
+	local record = current[boss.id]
+	if not RequestLogic.isAvailable(boss, current, Requests) then
+		local done, needed = RequestLogic.bellGauge(Requests, boss.chapter, current)
+		detailState.Text = t("MapStateLocked")
+		detailState.TextColor3 = COLOR.locked
+		detailGoal.Text = t("BossLocked", done, needed)
+	else
+		if not record then
+			detailState.Text = t("MapStateNew")
+			detailState.TextColor3 = COLOR.new
+		elseif record.medal ~= "gold" then
+			detailState.Text = t("MapStateImprove", t(MEDAL_KEY[record.medal]))
+			detailState.TextColor3 = COLOR[record.medal]
+		else
+			detailState.Text = t("MapStateDone")
+			detailState.TextColor3 = COLOR.gold
+		end
+		detailGoal.Text = t("Req_" .. boss.id .. "_Goal")
+	end
+	guideButton.Visible = true
 end
 
 local function showDetail()
@@ -237,6 +283,11 @@ local function showDetail()
 		return
 	end
 	closeButton.Position = UDim2.fromOffset(138, 196)
+	local boss = bossOf(selected)
+	if boss then
+		showBossDetail(boss, current)
+		return
+	end
 	local resident = residentSpec(selected)
 	local state = RequestLogic.residentState(Requests, selected, current)
 	detailName.Text = string.format("%s · %s", selected, t("Island_" .. resident.island))
@@ -259,8 +310,18 @@ local function showDetail()
 	guideButton.Visible = true
 end
 
--- 주민 핀 색: 새 의뢰는 노란 "!", 그 밖에는 그 주민 의뢰의 가장 낮은 메달 색
+-- 주민 핀 색: 새 의뢰는 노란 "!", 그 밖에는 그 주민 의뢰의 가장 낮은 메달 색.
+-- 보스 핀: 열렸으면 주홍 "!", 아직이면 먹구름색, 이겼으면 그 메달 색
 local function pinLook(residentId: string, current): (Color3, string)
+	local boss = bossOf(residentId)
+	if boss then
+		local record = current[boss.id]
+		if record then
+			return COLOR[record.medal], ""
+		end
+		return if RequestLogic.isAvailable(boss, current, Requests) then COLOR.boss else COLOR.storm,
+			if RequestLogic.isAvailable(boss, current, Requests) then "!" else ""
+	end
 	local state = RequestLogic.residentState(Requests, residentId, current)
 	if state == "new" then
 		return COLOR.new, "!"
@@ -303,9 +364,11 @@ local function redraw(mapSize: number)
 		circle.BackgroundColor3 = if e.upcoming then COLOR.Upcoming elseif e.chapter then COLOR.Island else COLOR.Hub
 		circle.BackgroundTransparency = if e.upcoming then 0.35 else 0
 		rounded(circle, UDim.new(0.5, 0))
+		-- 되살린 섬은 금빛 테두리
+		local restored = e.chapter ~= nil and not e.upcoming and RequestLogic.isRestored(Requests, e.chapter, current)
 		local rim = Instance.new("UIStroke")
-		rim.Color = COLOR.Rim
-		rim.Thickness = if e.upcoming then 1 else 2
+		rim.Color = if restored then COLOR.gold else COLOR.Rim
+		rim.Thickness = if e.upcoming then 1 elseif restored then 4 else 2
 		rim.Transparency = if e.upcoming then 0.6 else 0.1
 		rim.Parent = circle
 		circle.Parent = mapArea
@@ -314,6 +377,8 @@ local function redraw(mapSize: number)
 		local name = t("Island_" .. e.id)
 		if e.upcoming then
 			name = name .. "\n" .. t("MapUpcoming")
+		elseif restored then
+			name = name .. "\n" .. t("MapRestored")
 		end
 		local caption = label(mapArea, {
 			AnchorPoint = Vector2.new(0.5, 0),
@@ -340,6 +405,12 @@ local function redraw(mapSize: number)
 					local offset = Vector2.new(resident.x, resident.z) / island.radius * (radius - pinSize / 2)
 					table.insert(points, center + offset)
 				end
+			end
+			-- 장 보스 핀은 섬 가운데(정상)에. 섬을 되살리면 금빛 테두리가 대신한다
+			local chapterSpec = e.chapter and Requests.Chapters[e.chapter]
+			if chapterSpec and chapterSpec.boss and not restored then
+				table.insert(residents, { id = chapterSpec.boss })
+				table.insert(points, center)
 			end
 			spread(points, pinSize + 4)
 			for i, resident in residents do
@@ -375,7 +446,11 @@ local function redraw(mapSize: number)
 	for chapter, spec in Requests.Chapters do
 		local bell, needed = RequestLogic.bellGauge(Requests, chapter, current)
 		local done, total = RequestLogic.chapterCount(Requests, chapter, current)
-		table.insert(lines, t("MapChapter", chapter, t("Island_" .. spec.island)))
+		local title = t("MapChapter", chapter, t("Island_" .. spec.island))
+		if RequestLogic.isRestored(Requests, chapter, current) then
+			title ..= " · " .. t("MapRestored")
+		end
+		table.insert(lines, title)
 		table.insert(lines, t("MapChapterProgress", bell, needed, done, total))
 	end
 	chapterLabel.Text = table.concat(lines, "\n")
@@ -534,12 +609,12 @@ local function build()
 	closeButton.Activated:Connect(SkyMap.close)
 end
 
--- 튜토리얼을 막 끝냈을 때만 알린다 (이미 끝낸 플레이어가 들어올 때는 조용히 연다)
+-- 막 열렸을 때만 알린다 (이미 열린 플레이어가 들어올 때는 조용히 연다)
 local function refreshUnlock()
 	if type(player:GetAttribute("RequestProgress")) ~= "string" then
 		return
 	end
-	local now = RequestLogic.chapterComplete(Requests, 0, progress())
+	local now = RequestLogic.isMapUnlocked(Requests, progress())
 	if now and not unlocked and loaded then
 		ui.toast(t("MapUnlocked"))
 	end
@@ -574,7 +649,10 @@ function SkyMap.start(hopController, requestUi)
 	ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		if prompt:GetAttribute("SkyMap") then
 			SkyMap.open()
-		elseif prompt:GetAttribute("Resident") == guideTarget then
+		elseif
+			guideTarget
+			and (prompt:GetAttribute("Resident") == guideTarget or prompt:GetAttribute("Boss") == guideTarget)
+		then
 			clearGuide()
 		end
 	end)
@@ -596,7 +674,7 @@ function SkyMap.start(hopController, requestUi)
 	RunService.RenderStepped:Connect(function()
 		local root = hop.rootPart()
 		if guideTarget and root then
-			local target = residentPosition(guideTarget)
+			local target = targetPosition(guideTarget)
 			if target and (root.Position - target).Magnitude <= GUIDE_CLEAR_DISTANCE then
 				clearGuide()
 			end

@@ -6,6 +6,8 @@ Roblox 수직 하이점프 3D 플랫포머 (글로벌 출시, 기본 영어). 1�
 ## 현재 단계
 
 - **W3 진행 중** (2026-11-04, 사용자 요청 "계속 개발 진행해줘"). W2(떠 있는 섬 월드, 아찔함 연출, 의뢰 시스템, 모바일 UI 배치, ProfileStore 저장, 연속 퍼펙트 연출)는 끝났다. W3 순서: ① 1장 의뢰 10개·유형 6종 (완료: 주민 렌 + 경주 유형) → ② 하늘 지도 (완료: UI/SkyMap, 허브 지도 탁자, 길 안내 빛기둥) → ③ 주민 이야기 끝 연출 (완료: 브람 → 허브 빵집, Requests/Stories, Config Requests.Stories) → ④ 클라우드 러시(해일·종·라이벌 밟기·청크 15개). ④는 1·2단계 완료(탑·해일·종·결과, 라이벌 밟기, MovementGuard — GDD 7.2·14.2). W3 코드 항목은 모두 끝났다. 남은 것: 2인 이상 러시 실제 테스트(밟기 장면 미확인), W3 완료 기준인 지인 3~5명 테스트. 아이콘은 아트 작업이라 코드 범위 밖.
+- **완성도 작업 중** (2026-11-04, 사용자 요청 "테스트는 미루고 컨텐츠·볼륨·재미·모델링 등 완성도를 높여줘"). 순서: ① 1장 보스 썬더헤드 + 섬 복구 (완료·Studio 확인: Requests/Boss, Objectives Boss 유형, Stories Chapter1 무지개, 하늘 지도 보스 핀·복구 표시 — GDD 6.3) → ② 주민 외형 모델링 + 레아·렌 이야기 끝 → ③ 코인 상점(코스메틱, 코인만) → ④ 숨은 수집품·러시 청크 추가 → ⑤ 배경음악·환경음. 부츠·데일리 어센트·2장은 여전히 요청 전에 만들지 않는다.
+- 보스 테스트: 서버가 종 게이지(1장 의뢰 6개)를 확인하므로 의뢰 6개를 실제로 끝내야 도전할 수 있다. 빠른 순서: 레아 배달 → 브람 빨래(4초 간격, minTime 25) → 브람 머크 → 렌 리본(4초 간격) → 렌 연 경주(5초 뒤 결승점으로) → 렌 연줄 머크. 피뢰침은 발판 위 공중으로 옮긴 뒤 LeftShift(스톰프). Studio 창이 최소화되면 화면이 하얗게 나오고 프롬프트가 뜨지 않는다.
 - 러시 테스트: 대기 20초 동안 띠의 참가 버튼을 누른다(MCP 실행 스레드는 Remote를 못 쏜다). 클라이언트에서 루트를 Anchored로 고정하면 서버가 떨어진 것으로 보고 탈락시키므로, 실제 발판 위에 세워서 본다. 러시 중 300보다 높이 순간이동하면 MovementGuard가 되돌린다(출력 창 `[MovementGuard]`) — 테스트에서 높은 곳을 볼 때는 낮은 발판부터 차례로 옮기거나 경고를 감안한다.
 - place가 게시 전이라 Studio에서는 ProfileStore가 메모리 저장소로 돈다(실제 저장 확인은 게시하고 API 접근을 켠 뒤). 플레이를 다시 시작하면 의뢰 진행이 비므로, 선행 의뢰가 있는 의뢰는 앞 의뢰부터 다시 끝내고 확인한다. UI만 볼 때는 Client `execute_luau`로 `RequestProgress` 속성을 이 클라이언트에서만 바꿔 써도 된다(서버 데이터는 그대로).
 - 모바일 점검은 Studio Test → Device Simulator로 한다. 플레이를 다시 시작하면 가로로 돌아가고, 프롬프트는 카메라 화면 안에 있어야 뜬다.
@@ -59,7 +61,8 @@ src/
   StarterPlayer/StarterPlayerScripts/
     Main.client.luau          클라이언트 부트스트랩
     Movement/                 HopController, SkyCamera, LandingMarker, Effects, Vertigo(아찔함), Ambience(풍경 움직임)
-    Requests/                 RequestController(대화·서버 확인), Objectives(유형별 목표), Stories(이야기 끝·허브 변화)
+    Requests/                 RequestController(대화·서버 확인), Objectives(유형별 목표·보스 싸움), Stories(이야기 끝·허브 변화·섬 복구),
+                              Boss(정상 위 먹구름·도전 받침대)
     UI/                       Hud, RequestUi, SkyMap(하늘 지도), RushHud(러시 띠·해일·결과)
 ServerStorage.Assets          무료 에셋. Rojo 밖, place 파일에만 있다 (ASSETS.md)
 third_party/                  외부 라이브러리의 출처·커밋·라이선스

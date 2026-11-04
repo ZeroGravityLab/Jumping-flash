@@ -21,7 +21,7 @@ local function start(player: Player, requestId: any): boolean
 	end
 	local request = RequestLogic.find(Requests, requestId)
 	local profile = DataService.get(player)
-	if not (request and profile and RequestLogic.isAvailable(request, profile.requests)) then
+	if not (request and profile and RequestLogic.isAvailable(request, profile.requests, Requests)) then
 		return false
 	end
 	sessions[player] = { id = requestId, startedAt = os.clock() }
