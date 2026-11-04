@@ -49,6 +49,13 @@ local LANGUAGES = {
 		Island_Storm = "Storm Citadel",
 		Island_Moon = "Moon Garden",
 		Island_SkyEnd = "Sky's End",
+
+		-- 주민 이야기 끝 (Config Requests.Stories)
+		StoryComplete = "Story complete!",
+		Story_Bakery_Title = "Flour for the Bakery",
+		Story_Bakery_Line = "Bram: The windmill is turning again!\nMomo: My oven is warm at last. The bakery is open!",
+		Story_Bakery_Change = "Momo's bakery stall opened in Skyhaven. Try the bouncy buns. One is up on the roof!",
+		StoryBakerySign = "BAKERY",
 		StatsTitle = "Toy stats",
 		StatsTime = "Play time %s",
 		StatsJumps = "Air jumps %d · Perfect %s",
@@ -160,6 +167,12 @@ local LANGUAGES = {
 		Island_Storm = "폭풍 성채",
 		Island_Moon = "달 정원",
 		Island_SkyEnd = "하늘 끝",
+
+		StoryComplete = "이야기 완료!",
+		Story_Bakery_Title = "빵집에 온 밀가루",
+		Story_Bakery_Line = "브람: 풍차가 다시 돈다!\n모모: 드디어 오븐이 따뜻해졌어. 빵집 문 열었단다!",
+		Story_Bakery_Change = "스카이헤이븐에 모모네 빵 가판대가 열렸어요. 통통 빵을 밟아 보세요. 지붕 위에도 하나 있어요!",
+		StoryBakerySign = "빵집",
 		StatsTitle = "토이 기록",
 		StatsTime = "플레이 시간 %s",
 		StatsJumps = "공중 점프 %d · 퍼펙트 %s",

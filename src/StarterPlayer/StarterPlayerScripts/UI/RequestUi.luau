@@ -1,4 +1,4 @@
--- 의뢰 화면: 주민 대화창, 진행 표시, 결과 창, 실패 알림
+-- 의뢰 화면: 주민 대화창, 진행 표시, 결과 창, 주민 이야기 엔딩 카드, 실패 알림
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -87,8 +87,12 @@ local startButton, laterButton: TextButton
 local trackerGoal, trackerProgress, trackerTime: TextLabel
 local resultTitle, resultMedal, resultDetail: TextLabel
 local toastLabel: TextLabel
+local storyCard: Frame
+local storyTitle, storyLines, storyChange: TextLabel
 local onStartCallback: (() -> ())? = nil
+local onStoryClosed: (() -> ())? = nil
 local resultToken = 0
+local STORY_SECONDS = 14 -- 엔딩 카드는 이만큼 뒤에 저절로 닫힌다
 
 -- 대화창 글자 배치: 넓은 화면과 좁은 화면(세로 휴대폰). 좁으면 메달 기준을 버튼 위 전체 폭으로 쓴다
 local DIALOG_LAYOUT = {
@@ -156,6 +160,7 @@ local function layout()
 	trackerGoal.TextSize = if touch then 15 else 17
 
 	result.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 170)
+	storyCard.Size = UDim2.fromOffset(math.min(540, viewport.X - 24), if viewport.X < 520 then 330 else 290)
 	toastLabel.Position = UDim2.new(0.5, 0, 0, if touch and portrait then 214 else 120)
 	toastLabel.Size = UDim2.fromOffset(math.min(600, viewport.X - 24), 56)
 	toastLabel.TextSize = if viewport.X < 600 then 20 else 24
@@ -231,6 +236,45 @@ function RequestUi.start()
 		TextColor3 = COLOR.Soft,
 		TextXAlignment = Enum.TextXAlignment.Center,
 	})
+
+	-- 주민 이야기 엔딩 카드
+	storyCard = panel(gui, {
+		Name = "Story",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.45),
+	})
+	label(storyCard, {
+		Position = UDim2.fromOffset(20, 14),
+		Size = UDim2.new(1, -40, 0, 22),
+		TextSize = 18,
+		TextColor3 = COLOR.gold,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Text = t("StoryComplete"),
+	})
+	storyTitle = label(storyCard, {
+		Position = UDim2.fromOffset(20, 38),
+		Size = UDim2.new(1, -40, 0, 34),
+		TextSize = 28,
+		TextXAlignment = Enum.TextXAlignment.Center,
+	})
+	-- 대사는 남는 높이를 모두 쓰고, 바뀐 것 안내는 버튼 바로 위
+	storyLines = label(storyCard, {
+		Position = UDim2.fromOffset(24, 80),
+		Size = UDim2.new(1, -48, 1, -196),
+		TextSize = 17,
+		TextColor3 = COLOR.Soft,
+		TextYAlignment = Enum.TextYAlignment.Top,
+	})
+	storyChange = label(storyCard, {
+		Position = UDim2.new(0, 24, 1, -108),
+		Size = UDim2.new(1, -48, 0, 46),
+		TextSize = 16,
+		TextYAlignment = Enum.TextYAlignment.Top,
+	})
+	local storyOk = button(storyCard, COLOR.Accept, UDim2.new(1, -16, 1, -12))
+	storyOk.Name = "OkButton"
+	storyOk.Text = t("Ok")
+	storyOk.Activated:Connect(RequestUi.hideStory)
 
 	tracker.Name = "Tracker"
 	result.Name = "Result"
@@ -335,6 +379,29 @@ function RequestUi.showResult(data)
 			result.Visible = false
 		end
 	end)
+end
+
+-- 주민 이야기 엔딩: 제목, 주민들의 대사, 허브에서 바뀐 것. 닫히면 onClosed를 부른다
+function RequestUi.showStory(storyId: string, onClosed: (() -> ())?)
+	storyTitle.Text = t("Story_" .. storyId .. "_Title")
+	storyLines.Text = t("Story_" .. storyId .. "_Line")
+	storyChange.Text = t("Story_" .. storyId .. "_Change")
+	onStoryClosed = onClosed
+	storyCard.Visible = true
+	task.delay(STORY_SECONDS, function()
+		if storyCard.Visible and onStoryClosed == onClosed then
+			RequestUi.hideStory()
+		end
+	end)
+end
+
+function RequestUi.hideStory()
+	storyCard.Visible = false
+	local callback = onStoryClosed
+	onStoryClosed = nil
+	if callback then
+		callback()
+	end
 end
 
 function RequestUi.toast(text: string)

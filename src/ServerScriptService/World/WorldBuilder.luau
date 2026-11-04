@@ -32,7 +32,7 @@ end
 
 local TREE_CLEAR_HEIGHT = 50 -- 이보다 낮은 공중 지점도 나무 수관에 묻히지 않게 비워 둔다
 
--- 이 섬 의뢰의 바닥 근처 지점(섬 중심 기준)과 의뢰가 쓰는 위성 섬 번호
+-- 이 섬 의뢰·이야기 소품의 바닥 근처 지점(섬 중심 기준)과 의뢰가 쓰는 위성 섬 번호
 local function requestSpots(islandId: string): ({ any }, { [number]: boolean })
 	local residentIsland = {}
 	for _, resident in Requests.Residents do
@@ -54,6 +54,14 @@ local function requestSpots(islandId: string): ({ any }, { [number]: boolean })
 				table.insert(surface, { x = spec.air[1], z = spec.air[3] })
 			elseif spec.satellite then
 				satellites[spec.satellite[1]] = true
+			end
+		end
+	end
+	-- 주민 이야기가 끝나면 세울 소품 자리
+	for _, story in Requests.Stories do
+		if story.island == islandId then
+			for _, spot in story.spots do
+				table.insert(surface, { x = spot[1], z = spot[2] })
 			end
 		end
 	end

@@ -13,6 +13,21 @@ return {
 		[1] = { island = "WindmillMeadow", bossAt = 6 },
 	},
 
+	-- 주민 이야기 (GDD 6.6): final 의뢰를 처음 끝내면 엔딩 카드가 뜨고 허브가 바뀐다 (그 플레이어에게만).
+	-- 바뀐 모습은 클라이언트 Requests/Stories의 같은 id 빌더가 만들고, 카드를 닫으면 showAt 주민에게 길 안내한다.
+	-- spots는 island 중심 기준 {x, z}이고, 월드 생성 때 그 주변에 나무를 심지 않는다
+	Stories = {
+		{
+			id = "Bakery",
+			resident = "Bram",
+			final = "c1_flour",
+			showAt = "Momo",
+			island = "Skyhaven",
+			spots = { stall = { -30, 24 }, bun = { -22, 44 } },
+			house = { -66, 46 }, -- 모모 뒤 집: 굴뚝 연기와 지붕 위 통통 빵
+		},
+	},
+
 	Residents = {
 		{ id = "Pip", island = "Skyhaven", x = 28, z = 34, yaw = 210, color = { 120, 170, 230 } },
 		{ id = "Momo", island = "Skyhaven", x = -44, z = 18, yaw = 120, color = { 240, 170, 150 } },

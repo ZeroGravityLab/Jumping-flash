@@ -171,6 +171,35 @@ return {
 		check.truthy(total >= Requests.Chapters[1].bossAt)
 	end,
 
+	["주민 이야기는 그 주민의 실제 의뢰로 끝나고, 문구와 섬 안 소품 자리가 있다"] = function()
+		local residents, islands = {}, {}
+		for _, r in Requests.Residents do
+			residents[r.id] = true
+		end
+		for _, island in World.Islands do
+			islands[island.id] = island
+		end
+		for _, story in Requests.Stories do
+			local final = RequestLogic.find(Requests, story.final)
+			check.truthy(final ~= nil, story.id .. " final request missing")
+			check.equal(final and final.resident, story.resident)
+			check.truthy(residents[story.showAt], story.id .. " showAt unknown")
+			local island = islands[story.island]
+			check.truthy(island ~= nil, story.id .. " unknown island")
+			for name, spot in story.spots do
+				check.truthy(
+					math.sqrt(spot[1] ^ 2 + spot[2] ^ 2) < island.radius,
+					story.id .. "." .. name .. " off island"
+				)
+			end
+			for code, texts in Strings.languages do
+				for _, suffix in { "_Title", "_Line", "_Change" } do
+					check.truthy(texts["Story_" .. story.id .. suffix] ~= nil, code .. " missing story text")
+				end
+			end
+		end
+	end,
+
 	["하늘 지도의 섬 이름이 모든 언어에 있다"] = function()
 		local ids = {}
 		for _, island in World.Islands do

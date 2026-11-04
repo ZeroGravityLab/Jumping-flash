@@ -5,7 +5,7 @@ Roblox 수직 하이점프 3D 플랫포머 (글로벌 출시, 기본 영어). 1�
 
 ## 현재 단계
 
-- **W3 진행 중** (2026-11-04, 사용자 요청 "계속 개발 진행해줘"). W2(떠 있는 섬 월드, 아찔함 연출, 의뢰 시스템, 모바일 UI 배치, ProfileStore 저장, 연속 퍼펙트 연출)는 끝났다. W3 순서: ① 1장 의뢰 10개·유형 6종 (완료: 주민 렌 + 경주 유형) → ② 하늘 지도 (완료: UI/SkyMap, 허브 지도 탁자, 길 안내 빛기둥) → ③ 주민 이야기 끝 연출 → ④ 클라우드 러시(해일·종·라이벌 밟기·청크 15개). 아이콘은 아트 작업이라 코드 범위 밖.
+- **W3 진행 중** (2026-11-04, 사용자 요청 "계속 개발 진행해줘"). W2(떠 있는 섬 월드, 아찔함 연출, 의뢰 시스템, 모바일 UI 배치, ProfileStore 저장, 연속 퍼펙트 연출)는 끝났다. W3 순서: ① 1장 의뢰 10개·유형 6종 (완료: 주민 렌 + 경주 유형) → ② 하늘 지도 (완료: UI/SkyMap, 허브 지도 탁자, 길 안내 빛기둥) → ③ 주민 이야기 끝 연출 (완료: 브람 → 허브 빵집, Requests/Stories, Config Requests.Stories) → ④ 클라우드 러시(해일·종·라이벌 밟기·청크 15개). 아이콘은 아트 작업이라 코드 범위 밖.
 - place가 게시 전이라 Studio에서는 ProfileStore가 메모리 저장소로 돈다(실제 저장 확인은 게시하고 API 접근을 켠 뒤). 플레이를 다시 시작하면 의뢰 진행이 비므로, 선행 의뢰가 있는 의뢰는 앞 의뢰부터 다시 끝내고 확인한다. UI만 볼 때는 Client `execute_luau`로 `RequestProgress` 속성을 이 클라이언트에서만 바꿔 써도 된다(서버 데이터는 그대로).
 - 모바일 점검은 Studio Test → Device Simulator로 한다. 플레이를 다시 시작하면 가로로 돌아가고, 프롬프트는 카메라 화면 안에 있어야 뜬다.
 - 개발자 본인 손맛 테스트는 2026-11-04 통과("손맛 좋다"). 테스터 5명 기준 토이 게이트(GDD 15장)는 아직 남아 있다. W4 이후 기능(데일리 어센트, 리그, 부츠 등)은 요청 전에 만들지 않는다. 단계가 바뀌면 이 섹션을 갱신한다.
@@ -55,7 +55,7 @@ src/
   StarterPlayer/StarterPlayerScripts/
     Main.client.luau          클라이언트 부트스트랩
     Movement/                 HopController, SkyCamera, LandingMarker, Effects, Vertigo(아찔함), Ambience(풍경 움직임)
-    Requests/                 RequestController(대화·서버 확인), Objectives(유형별 목표)
+    Requests/                 RequestController(대화·서버 확인), Objectives(유형별 목표), Stories(이야기 끝·허브 변화)
     UI/                       Hud, RequestUi, SkyMap(하늘 지도)
 ServerStorage.Assets          무료 에셋. Rojo 밖, place 파일에만 있다 (ASSETS.md)
 third_party/                  외부 라이브러리의 출처·커밋·라이선스

@@ -13,6 +13,7 @@ local RequestController = require(Requests:WaitForChild("RequestController"))
 local Hud = require(UI:WaitForChild("Hud"))
 local RequestUi = require(UI:WaitForChild("RequestUi"))
 local SkyMap = require(UI:WaitForChild("SkyMap"))
+local Stories = require(Requests:WaitForChild("Stories"))
 
 HopController.start()
 SkyCamera.start(HopController)
@@ -24,3 +25,4 @@ RequestUi.start()
 SkyMap.start(HopController, RequestUi)
 Hud.start(HopController, SkyCamera, LandingMarker, Vertigo, SkyMap)
 RequestController.start(HopController, RequestUi)
+task.spawn(Stories.start, HopController, RequestUi, SkyMap) -- 섬이 다 지어질 때까지 기다린다
