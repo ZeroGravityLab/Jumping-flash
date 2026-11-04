@@ -2,6 +2,7 @@
 -- 코인으로만 산다 (Robux 상품·확률형 없음). 이름은 Strings의 Item_<id>
 -- 색은 {r, g, b}. 궤적 colors는 꼬리 앞에서 뒤로 이어지는 색들이다
 -- 부츠: body 몸통, sole 밑창, accent 발목 띠. glow면 띠가 빛나고, metal이면 몸통이 금속 재질이다
+-- unlock이 있는 물건은 팔지 않는다: 그 섬의 숨은 별조각을 다 모으면 생긴다 (Config Collectibles.Sets)
 return {
 	Categories = { "Trail", "Boots" },
 
@@ -28,6 +29,12 @@ return {
 				{ 90, 170, 255 },
 				{ 180, 110, 240 },
 			},
+		},
+		{
+			id = "trail_stardust",
+			category = "Trail",
+			unlock = "Skyhaven",
+			colors = { { 255, 255, 255 }, { 255, 225, 120 }, { 200, 170, 255 } },
 		},
 
 		{
@@ -80,6 +87,15 @@ return {
 			accent = { 255, 226, 130 },
 			glow = true,
 			metal = true,
+		},
+		{
+			id = "boots_meadow",
+			category = "Boots",
+			unlock = "WindmillMeadow",
+			body = { 120, 200, 90 },
+			sole = { 140, 96, 60 },
+			accent = { 255, 150, 200 },
+			glow = true,
 		},
 	},
 }

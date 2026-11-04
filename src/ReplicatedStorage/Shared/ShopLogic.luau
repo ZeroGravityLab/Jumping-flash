@@ -28,6 +28,9 @@ function ShopLogic.canBuy(item, coins: number, owned: Owned): (boolean, string?)
 	if owned[item.id] then
 		return false, "ShopOwned"
 	end
+	if item.unlock then
+		return false, "ShopLocked" -- 별조각을 다 모아야 생긴다
+	end
 	if coins < item.price then
 		return false, "ShopNoCoins"
 	end

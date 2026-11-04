@@ -14,7 +14,11 @@ return {
 			check.truthy(not seen[item.id], item.id .. " duplicated")
 			seen[item.id] = true
 			check.truthy(ShopLogic.isCategory(Shop, item.category), item.id .. " unknown category")
-			check.truthy(item.price > 0 and item.price % 1 == 0, item.id .. " bad price")
+			if item.unlock then
+				check.truthy(item.price == nil, item.id .. " unlock items have no price")
+			else
+				check.truthy(item.price > 0 and item.price % 1 == 0, item.id .. " bad price")
+			end
 			for code, texts in Strings.languages do
 				check.truthy(texts["Item_" .. item.id] ~= nil, code .. " missing Item_" .. item.id)
 			end
@@ -47,6 +51,13 @@ return {
 		check.equal(select(2, ShopLogic.canBuy(item, item.price - 1, {})), "ShopNoCoins")
 		check.equal(ShopLogic.canBuy(item, item.price, {}), true)
 		check.equal(ShopLogic.find(Shop, 42), nil)
+	end,
+
+	["별조각 보상 물건은 팔지 않는다"] = function()
+		local item = ShopLogic.find(Shop, "trail_stardust")
+		check.truthy(item ~= nil and item.unlock ~= nil)
+		check.equal(select(2, ShopLogic.canBuy(item, 99999, {})), "ShopLocked")
+		check.equal(ShopLogic.canEquip(Shop, "Trail", "trail_stardust", { trail_stardust = true }), true)
 	end,
 
 	["장착: 가진 물건을 맞는 칸에만, 빈 칸으로 벗을 수 있다"] = function()

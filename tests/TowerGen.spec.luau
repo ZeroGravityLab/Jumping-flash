@@ -12,8 +12,8 @@ local function ids(layout): string
 end
 
 return {
-	["청크는 15종이고 id가 겹치지 않으며 쉬는 청크가 있다"] = function()
-		check.equal(#Chunks, 15)
+	["청크는 21종이고 id가 겹치지 않으며 쉬는 청크가 있다"] = function()
+		check.equal(#Chunks, 21)
 		local seen, rests = {}, 0
 		for _, chunk in Chunks do
 			check.truthy(not seen[chunk.id], "duplicate " .. chunk.id)

@@ -1,4 +1,4 @@
--- 클라우드 러시 청크 15종 (GDD 8.1). 청크 하나는 높이 150(Rush.ChunkHeight)의 수직 구간이다.
+-- 클라우드 러시 청크 21종 (GDD 8.1). 청크 하나는 높이 150(Rush.ChunkHeight)의 수직 구간이다.
 -- 원점은 청크 바닥 가운데의 입구 발판 윗면이고, 출구는 (0, 150, 0) = 다음 청크의 입구(또는 꼭대기 종).
 -- 발판 { 종류, x, y, z, 크기 }
 --   slab    고정 발판. 지름이 크기, 윗면이 y
@@ -108,6 +108,48 @@ return {
 		difficulty = 1,
 		rest = true,
 		platforms = { { "cloud", 0, 60, 0, 40 }, { "slab", 25, 105, 0, 16 } },
+		path = { 1, 2 },
+	},
+	-- 완성도 작업에서 더한 청크 (15 → 21종)
+	{
+		id = "Terrace",
+		difficulty = 1,
+		platforms = { { "slab", -25, 40, 20, 18 }, { "slab", 15, 80, 30, 18 }, { "slab", 25, 120, -10, 18 } },
+		path = { 1, 2, 3 },
+	},
+	{
+		id = "PadHop",
+		difficulty = 2,
+		platforms = { { "pad", -25, 10, -15 }, { "cloud", 25, 110, 15, 16 } },
+		path = { 1, 2 },
+	},
+	{
+		id = "DraftRelay",
+		difficulty = 3,
+		platforms = {
+			{ "updraft", 30, 0, 0, 60 },
+			{ "slab", 0, 70, 30, 12 },
+			{ "updraft", -30, 70, 0, 60 },
+		},
+		path = { 1, 2, 3 },
+	},
+	{
+		id = "PuffTower",
+		difficulty = 4,
+		platforms = { { "puff", 15, 30, 15 }, { "puff", -15, 95, 15 }, { "slab", 0, 140, -20, 10 } },
+		path = { 1, 2, 3 },
+	},
+	{
+		id = "Needles",
+		difficulty = 5,
+		platforms = { { "slab", 40, 40, 20, 6 }, { "slab", 0, 85, 45, 6 }, { "slab", -40, 125, 15, 6 } },
+		path = { 1, 2, 3 },
+	},
+	{
+		id = "Meadow",
+		difficulty = 1,
+		rest = true,
+		platforms = { { "slab", 0, 50, 25, 30 }, { "cloud", -20, 100, 0, 24 } },
 		path = { 1, 2 },
 	},
 }

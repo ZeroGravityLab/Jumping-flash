@@ -6,7 +6,9 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local Collectibles = require(ReplicatedStorage.Config.Collectibles)
 local Shop = require(ReplicatedStorage.Config.Shop)
+local CollectibleLogic = require(ReplicatedStorage.Shared.CollectibleLogic)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Strings = require(ReplicatedStorage.Shared.Strings)
 
@@ -159,6 +161,11 @@ local function refresh()
 		elseif owned[item.id] then
 			card.button.Text = t("ShopEquip")
 			card.button.BackgroundColor3 = COLOR.Equip
+		elseif item.unlock then
+			-- 팔지 않는 물건: 그 섬의 별조각을 몇 개 찾았는지
+			local found, total = CollectibleLogic.islandProgress(Collectibles, item.unlock, decode("Shards"))
+			card.button.Text = t("ShopShardCount", found, total)
+			card.button.BackgroundColor3 = COLOR.Locked
 		else
 			card.button.Text = t("ShopBuy", item.price)
 			card.button.BackgroundColor3 = if balance >= item.price then COLOR.Buy else COLOR.Locked
@@ -175,6 +182,10 @@ local function press(item)
 		return
 	end
 	local owned, equipped = decode("ShopOwned"), decode("ShopEquipped")
+	if not owned[item.id] and item.unlock then
+		status(t("ShopLocked", t("Island_" .. item.unlock)), COLOR.Gold)
+		return
+	end
 	if not owned[item.id] and coins() < item.price then
 		status(t("ShopNoCoins"), COLOR.Fail)
 		return
@@ -351,7 +362,7 @@ function ShopUi.start()
 	equipRemote = remotes:WaitForChild(Remotes.ShopEquip) :: RemoteFunction
 	build()
 
-	for _, name in { "Coins", "ShopOwned", "ShopEquipped" } do
+	for _, name in { "Coins", "ShopOwned", "ShopEquipped", "Shards" } do
 		player:GetAttributeChangedSignal(name):Connect(refresh)
 	end
 	for _, inst in workspace:GetDescendants() do

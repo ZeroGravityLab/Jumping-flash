@@ -9,8 +9,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local Collectibles = require(ReplicatedStorage.Config.Collectibles)
 local Requests = require(ReplicatedStorage.Config.Requests)
 local World = require(ReplicatedStorage.Config.World)
+local CollectibleLogic = require(ReplicatedStorage.Shared.CollectibleLogic)
 local RequestLogic = require(ReplicatedStorage.Shared.RequestLogic)
 local Strings = require(ReplicatedStorage.Shared.Strings)
 
@@ -72,6 +74,15 @@ local function progress(): RequestLogic.Progress
 	end
 	local ok, decoded = pcall(HttpService.JSONDecode, HttpService, raw)
 	return if ok then decoded else {}
+end
+
+local function shardsFound(): { [string]: boolean }
+	local raw = player:GetAttribute("Shards")
+	if type(raw) ~= "string" then
+		return {}
+	end
+	local ok, decoded = pcall(HttpService.JSONDecode, HttpService, raw)
+	return if ok and type(decoded) == "table" then decoded else {}
 end
 
 local function rounded(inst: GuiObject, radius: UDim)
@@ -388,20 +399,27 @@ local function redraw(mapSize: number)
 		circle.Parent = mapArea
 		table.insert(drawn, circle)
 
-		local name = t("Island_" .. e.id)
+		local lines = { t("Island_" .. e.id) }
 		if e.upcoming then
-			name = name .. "\n" .. t("MapUpcoming")
-		elseif restored then
-			name = name .. "\n" .. t("MapRestored")
+			table.insert(lines, t("MapUpcoming"))
+		else
+			-- 숨은 별조각: 찾은 개수 (어디 있는지는 알려 주지 않는다)
+			local found, total = CollectibleLogic.islandProgress(Collectibles, e.id, shardsFound())
+			if total > 0 then
+				table.insert(lines, t("MapShards", found, total))
+			end
+			if restored then
+				table.insert(lines, t("MapRestored"))
+			end
 		end
 		local caption = label(mapArea, {
 			AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.fromOffset(center.X, center.Y + radius + 2),
-			Size = UDim2.fromOffset(150, 34),
+			Size = UDim2.fromOffset(150, 17 * #lines),
 			TextSize = if e.upcoming then 12 else 15,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextColor3 = if e.upcoming then COLOR.Soft else COLOR.Text,
-			Text = name,
+			Text = table.concat(lines, "\n"),
 		})
 		local stroke = Instance.new("UIStroke")
 		stroke.Thickness = 1.5
@@ -651,6 +669,11 @@ function SkyMap.start(hopController, requestUi)
 	refreshUnlock()
 	player:GetAttributeChangedSignal("RequestProgress"):Connect(function()
 		refreshUnlock()
+		if gui.Enabled then
+			redraw(layout())
+		end
+	end)
+	player:GetAttributeChangedSignal("Shards"):Connect(function()
 		if gui.Enabled then
 			redraw(layout())
 		end
