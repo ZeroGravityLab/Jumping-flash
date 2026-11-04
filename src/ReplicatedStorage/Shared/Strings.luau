@@ -47,6 +47,8 @@ local LANGUAGES = {
 		FailMissed = "You missed a hoop. Try again!",
 		MurkRegrow = "You touched down, so the murk clumped back together! Pop them all in one go.",
 		FailServer = "Couldn't confirm the request.",
+		KickLoadFailed = "Couldn't load your save data. Please rejoin.",
+		KickSessionMoved = "Your save data was opened on another server. Please rejoin.",
 		ResidentDone = "That's everything for now. Thank you!",
 
 		Req_tut_letters_Line = "The storm blew my letters onto the rooftops! Could you gather them for me?",
@@ -115,6 +117,8 @@ local LANGUAGES = {
 		FailMissed = "고리를 놓쳤어요. 다시 해 봐요!",
 		MurkRegrow = "땅에 닿아서 머크가 다시 뭉쳤어요! 한 번에 전부 터뜨려 봐요.",
 		FailServer = "의뢰를 확인하지 못했어요.",
+		KickLoadFailed = "저장 데이터를 불러오지 못했어요. 다시 접속해 주세요.",
+		KickSessionMoved = "다른 서버에서 저장 데이터가 열렸어요. 다시 접속해 주세요.",
 		ResidentDone = "지금은 부탁할 게 없어. 고마워!",
 
 		Req_tut_letters_Line = "폭풍에 편지가 지붕 위로 날아갔어! 좀 모아 줄래?",

@@ -1,15 +1,19 @@
--- 프로필 읽기·쓰기는 여기서만 한다 (CLAUDE.md). 스키마를 바꾸면 SCHEMA_VERSION을 올리고 migrate에 단계를 더한다.
--- Studio에서 API 접근이 꺼져 DataStore를 못 쓰면 메모리 프로필로 동작한다(저장 안 됨).
--- 세션 잠금이 없으므로 출시 전에 ProfileStore로 바꾼다 (GDD 15장 W6~W8)
-local DataStoreService = game:GetService("DataStoreService")
+-- 프로필 읽기·쓰기는 여기서만 한다 (CLAUDE.md). 세션 잠금과 저장(주기·퇴장·서버 종료)은 ProfileStore가 맡는다.
+-- 새 필드는 TEMPLATE에 더하면 접속할 때 Reconcile로 채워진다. 기존 값의 뜻이 바뀌면 SCHEMA_VERSION을 올리고 변환 단계를 더한다.
+-- Studio에서 API 접근이 꺼져 있으면 ProfileStore가 메모리 저장소를 쓴다 (플레이를 멈추면 사라짐).
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
+local Strings = require(ReplicatedStorage.Shared.Strings)
 
 local DataService = {}
 
 local SCHEMA_VERSION = 1
-local STORE_NAME = "SkyhopProfile"
-local AUTOSAVE_SECONDS = 90
+-- Studio 테스트 데이터가 실제 플레이어 데이터에 섞이지 않게 저장소를 나눈다
+local STORE_NAME = if RunService:IsStudio() then "SkyhopProfile_Studio" else "SkyhopProfile"
 
 export type Profile = {
 	schemaVersion: number,
@@ -17,115 +21,70 @@ export type Profile = {
 	requests: { [string]: { medal: string, bestTime: number } },
 }
 
-local profiles: { [Player]: Profile } = {}
-local dirty: { [Player]: boolean } = {}
-local store: DataStore? = nil
+local TEMPLATE: Profile = { schemaVersion = SCHEMA_VERSION, coins = 0, requests = {} }
 
-do
-	local ok, result = pcall(function()
-		return DataStoreService:GetDataStore(STORE_NAME)
-	end)
-	if ok then
-		store = result
-	else
-		warn(
-			"[DataService] DataStore를 쓸 수 없어 메모리 프로필로 동작합니다(저장 안 됨):",
-			result
-		)
-	end
+local store = ProfileStore.New(STORE_NAME, TEMPLATE)
+local sessions: { [Player]: any } = {}
+
+-- 클라이언트 표시용. 판단은 항상 서버의 프로필로 한다
+local function publish(player: Player, data: Profile)
+	player:SetAttribute("Coins", data.coins)
+	player:SetAttribute("RequestProgress", HttpService:JSONEncode(data.requests))
 end
 
-local function defaultProfile(): Profile
-	return { schemaVersion = SCHEMA_VERSION, coins = 0, requests = {} }
-end
-
-local function migrate(data): Profile
-	if type(data) ~= "table" then
-		return defaultProfile()
-	end
-	data.coins = data.coins or 0
-	data.requests = data.requests or {}
-	data.schemaVersion = SCHEMA_VERSION
-	return data
-end
-
-local function key(player: Player): string
-	return "u" .. player.UserId
-end
-
--- 클라이언트 표시용. 판단은 항상 서버의 profiles로 한다
-local function publish(player: Player)
-	local profile = profiles[player]
-	player:SetAttribute("Coins", profile.coins)
-	player:SetAttribute("RequestProgress", HttpService:JSONEncode(profile.requests))
-end
-
-function DataService.load(player: Player)
-	local data = nil
-	if store then
-		local ok, result = pcall(function()
-			return store:GetAsync(key(player))
-		end)
-		if ok then
-			data = result
-		else
-			warn("[DataService] 불러오기 실패, 이번 세션은 저장되지 않습니다:", result)
+local function load(player: Player)
+	local profile = store:StartSessionAsync("Player_" .. player.UserId, {
+		Cancel = function()
+			return player.Parent ~= Players
+		end,
+	})
+	if not profile then
+		if player.Parent == Players then
+			player:Kick(Strings.get(player.LocaleId, "KickLoadFailed"))
 		end
+		return
 	end
-	profiles[player] = migrate(data)
-	publish(player)
+	profile:AddUserId(player.UserId) -- 데이터 삭제 요청(GDPR) 대응
+	profile:Reconcile()
+	-- 다른 서버가 세션을 가져가면 여기서는 더 쓰지 않는다
+	profile.OnSessionEnd:Connect(function()
+		if sessions[player] == profile then
+			sessions[player] = nil
+			player:Kick(Strings.get(player.LocaleId, "KickSessionMoved"))
+		end
+	end)
+	if player.Parent ~= Players then
+		profile:EndSession()
+		return
+	end
+	sessions[player] = profile
+	publish(player, profile.Data)
 end
 
 function DataService.get(player: Player): Profile?
-	return profiles[player]
+	local profile = sessions[player]
+	return if profile then profile.Data else nil
 end
 
 function DataService.update(player: Player, mutate: (Profile) -> ())
-	local profile = profiles[player]
+	local profile = sessions[player]
 	if not profile then
 		return
 	end
-	mutate(profile)
-	dirty[player] = true
-	publish(player)
-end
-
-function DataService.save(player: Player)
-	local profile = profiles[player]
-	if not (store and profile and dirty[player]) then
-		return
-	end
-	local ok, err = pcall(function()
-		store:SetAsync(key(player), profile)
-	end)
-	if ok then
-		dirty[player] = nil
-	else
-		warn("[DataService] 저장 실패:", err)
-	end
+	mutate(profile.Data)
+	publish(player, profile.Data)
 end
 
 function DataService.start()
-	Players.PlayerAdded:Connect(DataService.load)
+	Players.PlayerAdded:Connect(load)
 	for _, player in Players:GetPlayers() do
-		task.spawn(DataService.load, player)
+		task.spawn(load, player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
-		DataService.save(player)
-		profiles[player] = nil
-		dirty[player] = nil
-	end)
-	game:BindToClose(function()
-		for _, player in Players:GetPlayers() do
-			DataService.save(player)
-		end
-	end)
-	task.spawn(function()
-		while true do
-			task.wait(AUTOSAVE_SECONDS)
-			for _, player in Players:GetPlayers() do
-				DataService.save(player)
-			end
+		local profile = sessions[player]
+		sessions[player] = nil
+		if profile then
+			profile:EndSession()
 		end
 	end)
 end

@@ -5,7 +5,7 @@ Roblox 수직 하이점프 3D 플랫포머 (글로벌 출시, 기본 영어). 1�
 
 ## 현재 단계
 
-- **W2 진행 중** (2026-11-04, 사용자 요청으로 토이 게이트 전에 착수). 떠 있는 섬 월드(허브·1장), 아찔함 연출, 의뢰 시스템(튜토리얼 3 + 1장 6, 유형 5종: 수집·봉화·고리 다이빙·배달·머크 청소), 모바일 세로·가로 UI 배치까지 만들었다. 남은 것: ProfileStore 전환, 사람 테스트.
+- **W2 진행 중** (2026-11-04, 사용자 요청으로 토이 게이트 전에 착수). 떠 있는 섬 월드(허브·1장), 아찔함 연출, 의뢰 시스템(튜토리얼 3 + 1장 6, 유형 5종: 수집·봉화·고리 다이빙·배달·머크 청소), 모바일 세로·가로 UI 배치, ProfileStore 저장까지 만들었다. 남은 것: 사람 테스트. place가 게시 전이라 Studio에서는 ProfileStore가 메모리 저장소로 돈다(실제 저장 확인은 게시하고 API 접근을 켠 뒤).
 - 모바일 점검은 Studio Test → Device Simulator로 한다. 플레이를 다시 시작하면 가로로 돌아가고, 프롬프트는 카메라 화면 안에 있어야 뜬다.
 - 토이 게이트(사람 손맛 테스트, GDD 15장)는 아직 남아 있다. W3 기능(클라우드 러시, 청크)은 요청 전에 만들지 않는다. 단계가 바뀌면 이 섹션을 갱신한다.
 - 외부 에셋은 [ASSETS.md](ASSETS.md)의 규칙(정화·배율·place 저장)을 따른다.
@@ -49,13 +49,15 @@ src/
     Main.server.luau          부트스트랩: 서비스 시작 → 월드 생성 → 캐릭터 생성 허용
     World/                    WorldBuilder(조립), IslandTerrain, Decor(무료 에셋 배치), Features(이동 장치),
                               Clouds, Sky(조명·대기), Residents(주민 NPC)
-    Services/                 Net(Remote·빈도 제한), DataService, EconomyService, RequestService
+    Services/                 Net(Remote·빈도 제한), DataService(ProfileStore), EconomyService, RequestService
+    Packages/                 외부 라이브러리 원본 (ProfileStore). 고치지 않는다, selene·stylua 제외
   StarterPlayer/StarterPlayerScripts/
     Main.client.luau          클라이언트 부트스트랩
     Movement/                 HopController, SkyCamera, LandingMarker, Effects, Vertigo(아찔함), Ambience(풍경 움직임)
     Requests/                 RequestController(대화·서버 확인), Objectives(유형별 목표)
     UI/                       Hud, RequestUi
 ServerStorage.Assets          무료 에셋. Rojo 밖, place 파일에만 있다 (ASSETS.md)
+third_party/                  외부 라이브러리의 출처·커밋·라이선스
 tests/
   init.luau                   러너 (`lune run tests`)
   check.luau                  단언 헬퍼

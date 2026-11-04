@@ -1,1 +1,3 @@
 std = "roblox"
+# 외부 라이브러리는 원본 그대로 둔다 (third_party/)
+exclude = ["src/ServerScriptService/Packages/*"]
