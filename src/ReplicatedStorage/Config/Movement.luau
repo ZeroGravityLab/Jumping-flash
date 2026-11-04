@@ -6,6 +6,15 @@ return {
 	JumpVelocity = { 70, 90, 120 }, -- 1단(지면) · 2단 · 3단
 	PerfectMultiplier = 1.15,
 	PerfectWindow = 0.10, -- 정점 기준 ±초
+	-- 연속 퍼펙트 연출 단계 (GDD 5.2). 연출만 커지고 초속은 그대로다. 문구는 Strings PerfectTier1..
+	PerfectStreakTiers = {
+		{ from = 1, color = { 255, 205, 60 } },
+		{ from = 2, color = { 255, 150, 50 } },
+		{ from = 4, color = { 255, 95, 170 } },
+		{ from = 6, color = { 175, 110, 255 } },
+		{ from = 10, color = { 90, 220, 255 } },
+	},
+	PerfectStreakGroundGrace = 1.0, -- 땅에 이보다 오래 머물면 연속이 끊긴다
 	TerminalFall = 160,
 	StompDive = 180,
 	StompBounce = 95,

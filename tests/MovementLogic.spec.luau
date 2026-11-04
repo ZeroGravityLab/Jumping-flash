@@ -48,6 +48,18 @@ return {
 		check.truthy(not MovementLogic.isPerfect(Movement, edge + 0.5))
 	end,
 
+	["연속 퍼펙트 단계는 시작 횟수에서 오르고, 연속이 아니면 0"] = function()
+		check.equal(MovementLogic.perfectTier(Movement, 0), 0)
+		local previous = 0
+		for index, step in Movement.PerfectStreakTiers do
+			check.truthy(step.from > previous, "단계 시작 횟수는 오름차순")
+			check.equal(MovementLogic.perfectTier(Movement, step.from), index)
+			check.equal(MovementLogic.perfectTier(Movement, step.from - 1), index - 1)
+			previous = step.from
+		end
+		check.equal(MovementLogic.perfectTier(Movement, 999), #Movement.PerfectStreakTiers)
+	end,
+
 	["코요테 타임 안에서는 1단 점프"] = function()
 		local jump = airJump(0, Movement.CoyoteTime / 2, -1, false)
 		check.equal(jump and jump.index, 1)

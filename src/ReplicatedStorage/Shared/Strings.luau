@@ -1,7 +1,13 @@
 -- 플레이어에게 보이는 문자열 (기본 영어 + 한국어). 형식 지정자는 string.format 규칙.
 local LANGUAGES = {
 	en = {
-		Perfect = "PERFECT!",
+		-- 연속 퍼펙트 단계 (Config Movement.PerfectStreakTiers 순서)
+		PerfectTier1 = "PERFECT!",
+		PerfectTier2 = "AMAZING!",
+		PerfectTier3 = "GORGEOUS!",
+		PerfectTier4 = "FANTASTIC!",
+		PerfectTier5 = "HEAVENLY!",
+		PerfectCombo = "%s x%d",
 		StompCombo = "STOMP x%d",
 		BouncePad = "BOING!",
 		Buddy = "BUDDY BOUNCE!",
@@ -23,6 +29,7 @@ local LANGUAGES = {
 		StatsTrend = "Perfect: first 3 min %s → last 3 min %s",
 		StatsStomps = "Stomps %d · Bells %d",
 		StatsHighest = "Highest %d m",
+		StatsStreak = "Best Perfect streak %d",
 		StatsView = "Sky cam %s · First person %s",
 		NoData = "–",
 
@@ -71,7 +78,12 @@ local LANGUAGES = {
 		Req_c1_flour_Goal = "Carry the flour to Momo's bakery without stomping",
 	},
 	ko = {
-		Perfect = "퍼펙트!",
+		PerfectTier1 = "퍼펙트!",
+		PerfectTier2 = "어메이징!",
+		PerfectTier3 = "고저스!",
+		PerfectTier4 = "판타스틱!",
+		PerfectTier5 = "헤븐리!",
+		PerfectCombo = "%s x%d",
 		StompCombo = "밟기 x%d",
 		BouncePad = "띠용!",
 		Buddy = "친구 점프!",
@@ -93,6 +105,7 @@ local LANGUAGES = {
 		StatsTrend = "퍼펙트율: 처음 3분 %s → 최근 3분 %s",
 		StatsStomps = "밟기 %d · 종 %d",
 		StatsHighest = "최고 고도 %d m",
+		StatsStreak = "최고 연속 퍼펙트 %d",
 		StatsView = "스카이 캠 %s · 1인칭 %s",
 		NoData = "–",
 

@@ -1,8 +1,12 @@
--- 점프·퍼펙트·밟기·착지 연출. 클라이언트 전용.
+-- 점프·퍼펙트(연속 단계)·밟기·착지 연출. 클라이언트 전용.
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
+
+local Movement = require(ReplicatedStorage.Config.Movement)
+local MovementLogic = require(ReplicatedStorage.Shared.MovementLogic)
 
 -- Roblox 클라이언트 내장 사운드 (2026-11-02 로컬 content/sounds에서 확인). 전용 사운드는 아트 단계에서 교체
 local SOUND_ID = {
@@ -11,6 +15,11 @@ local SOUND_ID = {
 	Chime = "rbxasset://sounds/volume_slider.ogg",
 }
 local JUMP_PITCH = { 1, 1.26, 1.5 } -- 도·미·솔
+-- 연속 퍼펙트 차임은 장음계로 한 음씩 오른다 (반음 수). 끝에 닿으면 높은 도에 머문다
+local SCALE_STEPS = { 0, 2, 4, 5, 7, 9, 11, 12 }
+local CHIME_BASE = 1.2
+local SPARKLE_TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
+local AURA_FROM_TIER = 3 -- 이 단계부터 연속이 끊길 때까지 몸에 반짝이가 붙는다
 
 local COLOR = {
 	Ring = Color3.fromRGB(255, 255, 255),
@@ -59,6 +68,48 @@ local function ring(position: Vector3, color: Color3, fromSize: number, toSize: 
 	Debris:AddItem(part, duration + 0.1)
 end
 
+local function tierColor(tier: number): Color3
+	local rgb = Movement.PerfectStreakTiers[tier].color
+	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
+end
+
+local function sparkleEmitter(color: Color3): ParticleEmitter
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Texture = SPARKLE_TEXTURE
+	emitter.Color = ColorSequence.new(color, Color3.new(1, 1, 1))
+	emitter.LightEmission = 1
+	emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) })
+	emitter.Transparency = NumberSequence.new(0, 1)
+	emitter.Lifetime = NumberRange.new(0.5, 0.9)
+	emitter.Speed = NumberRange.new(8, 16)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Drag = 4
+	emitter.Rate = 0
+	return emitter
+end
+
+-- 발밑에서 반짝이가 사방으로 한 번 터진다
+local function sparkleBurst(position: Vector3, color: Color3, count: number)
+	local anchor = Instance.new("Part")
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.one
+	anchor.CFrame = CFrame.new(position)
+	anchor.Parent = folder
+	local emitter = sparkleEmitter(color)
+	emitter.Parent = anchor
+	emitter:Emit(count)
+	Debris:AddItem(anchor, 1.2)
+end
+
+local function perfectChime(streak: number)
+	local step = SCALE_STEPS[math.min(streak, #SCALE_STEPS)]
+	play("Chime", CHIME_BASE * 2 ^ (step / 12), 0.6)
+end
+
 -- 기본 캐릭터 점프음은 단계별 음으로, 낙하음은 Vertigo의 바람 소리로 대신한다
 local MUTED_DEFAULT_SOUNDS = { Jumping = true, FreeFalling = true }
 
@@ -78,15 +129,54 @@ end
 function Effects.start(hop)
 	folder = hop.localFolder
 
-	hop.onJump:Connect(function(index, perfect, position)
+	local aura: ParticleEmitter? = nil
+	local function clearAura()
+		if aura then
+			aura:Destroy()
+			aura = nil
+		end
+	end
+	local function setAura(tier: number)
+		local root = hop.rootPart()
+		if not root then
+			return
+		end
+		if not aura or aura.Parent ~= root then
+			clearAura()
+			-- 몸을 감싸고, 날아가면 꼬리처럼 남는다
+			aura = sparkleEmitter(tierColor(tier))
+			aura.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.2), NumberSequenceKeypoint.new(1, 0) })
+			aura.Speed = NumberRange.new(2, 5)
+			aura.Drag = 1
+			aura.Lifetime = NumberRange.new(0.7, 1.2)
+			aura.Parent = root
+		end
+		aura.Color = ColorSequence.new(tierColor(tier), Color3.new(1, 1, 1))
+		aura.Rate = 10 + tier * 10
+	end
+
+	hop.onJump:Connect(function(index, perfect, position, streak)
 		play("Jump", JUMP_PITCH[index] or 1, 0.5)
-		if index > 1 then
-			ring(position, if perfect then COLOR.Perfect else COLOR.Ring, 2, if perfect then 16 else 9, 0.35)
+		if not perfect then
+			if index > 1 then
+				ring(position, COLOR.Ring, 2, 9, 0.35)
+			end
+			return
 		end
-		if perfect then
-			play("Chime", 1.2, 0.6)
+		-- 연속 단계가 오를수록 링이 커지고, 2단계부터 링이 겹치며 반짝이가 터진다
+		local tier = MovementLogic.perfectTier(Movement, streak)
+		local color = tierColor(tier)
+		ring(position, color, 2, 14 + tier * 2, 0.35)
+		if tier >= 2 then
+			task.delay(0.08, ring, position, color, 4, 20 + tier * 4, 0.45)
+			sparkleBurst(position, color, 6 + tier * 4)
 		end
+		if tier >= AURA_FROM_TIER then
+			setAura(tier)
+		end
+		perfectChime(streak)
 	end)
+	hop.onPerfectStreakEnd:Connect(clearAura)
 
 	hop.onBounce:Connect(function(kind, combo, position)
 		-- 연쇄할수록 음이 오른다

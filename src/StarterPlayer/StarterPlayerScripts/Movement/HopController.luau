@@ -15,7 +15,8 @@ local Tags = require(ReplicatedStorage.Shared.Tags)
 local player = Players.LocalPlayer
 
 local HopController = {
-	onJump = Signal.new(), -- (index, perfect, feetPosition)
+	onJump = Signal.new(), -- (index, perfect, feetPosition, perfectStreak)
+	onPerfectStreakEnd = Signal.new(), -- (끊기기 전 연속 퍼펙트 횟수)
 	onBounce = Signal.new(), -- (kind: "stomp" | "pad" | "buddy", combo, feetPosition, part?)
 	onLand = Signal.new(), -- (stomped, feetPosition)
 	onBell = Signal.new(), -- (feetPosition)
@@ -26,6 +27,7 @@ local HopController = {
 		stomps = 0,
 		bells = 0,
 		maxAltitude = 0,
+		bestPerfectStreak = 0,
 	},
 	localFolder = nil :: Folder?, -- 복제되지 않는 클라이언트 전용 파트
 }
@@ -37,6 +39,8 @@ local grounded = true
 local arcLaunched = false
 local stomping = false
 local combo = 0
+local perfectStreak = 0
+local landedAt = -math.huge
 local lastGroundedAt = -math.huge
 local groundLockUntil = 0
 local lastLaunchAt = -math.huge
@@ -135,6 +139,7 @@ local function land(now: number)
 	arcLaunched = false
 	stomping = false
 	combo = 0
+	landedAt = now
 	humanoid.WalkSpeed = Movement.WalkSpeed
 	humanoid.JumpPower = Movement.JumpVelocity[1]
 	HopController.onLand:Fire(wasStomping, HopController.feetPosition())
@@ -143,11 +148,20 @@ local function land(now: number)
 		bufferedJumpAt = -math.huge
 		jumpsUsed = 1
 		launch(Movement.JumpVelocity[1])
-		HopController.onJump:Fire(1, false, HopController.feetPosition())
+		HopController.onJump:Fire(1, false, HopController.feetPosition(), perfectStreak)
+	end
+end
+
+local function endPerfectStreak()
+	if perfectStreak > 0 then
+		local ended = perfectStreak
+		perfectStreak = 0
+		HopController.onPerfectStreakEnd:Fire(ended)
 	end
 end
 
 local function resetAirState()
+	endPerfectStreak()
 	jumpsUsed = 0
 	grounded = false
 	arcLaunched = false
@@ -220,8 +234,14 @@ local function onJumpPressed()
 			t = now - HopController.stats.startedAt,
 			perfect = jump.perfect,
 		})
+		if jump.perfect then
+			perfectStreak += 1
+			HopController.stats.bestPerfectStreak = math.max(HopController.stats.bestPerfectStreak, perfectStreak)
+		else
+			endPerfectStreak()
+		end
 	end
-	HopController.onJump:Fire(jump.index, jump.perfect, HopController.feetPosition())
+	HopController.onJump:Fire(jump.index, jump.perfect, HopController.feetPosition(), perfectStreak)
 end
 
 function HopController.stomp()
@@ -390,6 +410,9 @@ local function step(dt: number)
 	if grounded and onFloor then
 		rememberSafeGround(now)
 	end
+	if grounded and now - landedAt > Movement.PerfectStreakGroundGrace then
+		endPerfectStreak()
+	end
 
 	if humanoid.JumpPower ~= Movement.JumpVelocity[1] and now - lastLaunchAt > Movement.GroundLockTime then
 		humanoid.JumpPower = Movement.JumpVelocity[1]
@@ -417,7 +440,7 @@ local function onStateChanged(_, newState: Enum.HumanoidStateType)
 	combo = 0
 	jumpsUsed = 1
 	humanoid.WalkSpeed = Movement.AirSpeed
-	HopController.onJump:Fire(1, false, HopController.feetPosition())
+	HopController.onJump:Fire(1, false, HopController.feetPosition(), perfectStreak)
 end
 
 local function onCharacterAdded(newCharacter: Model)

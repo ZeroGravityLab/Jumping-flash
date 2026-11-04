@@ -186,13 +186,14 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 	local popupStroke = popup:FindFirstChildOfClass("UIStroke")
 	popupStroke.Transparency = 1
 
-	local function showPopup(text: string, color: Color3)
+	local function showPopup(text: string, color: Color3, scale: number?)
+		local size = scale or 1
 		popup.Text = text
 		popup.TextColor3 = color
 		popup.TextTransparency = 0
 		popupStroke.Transparency = 0
-		popup.TextSize = 54
-		TweenService:Create(popup, TweenInfo.new(0.15), { TextSize = 44 }):Play()
+		popup.TextSize = 54 * size
+		TweenService:Create(popup, TweenInfo.new(0.15), { TextSize = 44 * size }):Play()
 		local fade = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.5)
 		TweenService:Create(popup, fade, { TextTransparency = 1 }):Play()
 		TweenService:Create(popupStroke, fade, { Transparency = 1 }):Play()
@@ -229,7 +230,7 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 	local statsPanel = newLabel(gui, {
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -12, 0, 60),
-		Size = UDim2.fromOffset(380, 150),
+		Size = UDim2.fromOffset(380, 172),
 		TextSize = 16,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
@@ -255,6 +256,7 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 				percent(ToyStats.perfectRate(stats.airJumps, 0, TREND_WINDOW)),
 				percent(ToyStats.perfectRate(stats.airJumps, math.max(0, elapsed - TREND_WINDOW), math.huge))
 			),
+			t("StatsStreak", stats.bestPerfectStreak),
 			t("StatsStomps", stats.stomps, stats.bells),
 			t("StatsHighest", math.round(stats.maxAltitude)),
 			t("StatsView", clock(viewSeconds.Sky), clock(viewSeconds.First)),
@@ -299,7 +301,7 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 			viewButton.Position = if portrait then UDim2.new(1, -58, 0, 140) else UDim2.new(1, -70, 0, 30)
 			statsButton.Position = if portrait then UDim2.new(1, -58, 0, 188) else UDim2.new(1, -176, 0, 30)
 			statsPanel.Position = if portrait then UDim2.new(1, -12, 0, 236) else UDim2.new(1, -12, 0, 60)
-			statsPanel.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 150)
+			statsPanel.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 172)
 			-- 좁은 화면에서는 긴 팝업("DING! ...")이 두 줄로 접힌다
 			popup.Size = UDim2.fromOffset(math.min(480, viewport.X - 16), if viewport.X < 500 then 110 else 64)
 		end
@@ -315,10 +317,18 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 		end
 	end)
 
-	hop.onJump:Connect(function(_, perfect)
-		if perfect then
-			showPopup(t("Perfect"), COLOR.Perfect)
+	-- 연속 퍼펙트는 단계마다 문구·색이 바뀌고 조금씩 커진다
+	hop.onJump:Connect(function(_, perfect, _, streak)
+		if not perfect then
+			return
 		end
+		local tier = MovementLogic.perfectTier(Movement, streak)
+		local text = t("PerfectTier" .. tier)
+		if streak > 1 then
+			text = t("PerfectCombo", text, streak)
+		end
+		local rgb = Movement.PerfectStreakTiers[tier].color
+		showPopup(text, Color3.fromRGB(rgb[1], rgb[2], rgb[3]), 1 + (tier - 1) * 0.08)
 	end)
 	hop.onBounce:Connect(function(kind, combo)
 		if kind == "pad" then

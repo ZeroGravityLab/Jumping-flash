@@ -31,6 +31,17 @@ function MovementLogic.isPerfect(cfg, vy: number): boolean
 	return MovementLogic.timeFromApex(vy, cfg.Gravity) <= cfg.PerfectWindow
 end
 
+-- 연속 퍼펙트 횟수의 연출 단계. 연속이 아니면 0
+function MovementLogic.perfectTier(cfg, streak: number): number
+	local tier = 0
+	for index, step in cfg.PerfectStreakTiers do
+		if streak >= step.from then
+			tier = index
+		end
+	end
+	return tier
+end
+
 -- 공중에서 점프 입력이 들어왔을 때 낼 점프. 남은 점프가 없으면 nil
 function MovementLogic.resolveAirJump(cfg, state: AirState): Jump?
 	if state.jumpsUsed == 0 and state.sinceGrounded <= cfg.CoyoteTime then
