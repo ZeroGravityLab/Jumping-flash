@@ -1,11 +1,16 @@
--- 클라우드 러시 화면 (GDD 7.2, 13): 대기 중 참가 버튼, 진행 중 시간·남은 사람·해일까지 거리, 결과 창.
+-- 클라우드 러시 화면 (GDD 7.2, 13): 대기 중에는 구석의 작은 참가 버튼, 참가했거나 탑 위에 있으면
+-- 위쪽 가운데 띠(남은 시간·남은 사람·해일까지 거리), 결과 창.
+-- 작은 버튼은 튜토리얼을 끝낸 뒤(하늘 지도가 열린 뒤)에만 보인다. 첫 접속에서는 핍의 첫 의뢰에 집중하게 한다.
 -- 해일은 서버 시간과 Config로 각자 계산해 부드럽게 그린다 (탈락 판정은 서버 RoundService)
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local RequestLogic = require(ReplicatedStorage.Shared.RequestLogic)
+local Requests = require(ReplicatedStorage.Config.Requests)
 local Rush = require(ReplicatedStorage.Config.Rush)
 local RushLogic = require(ReplicatedStorage.Shared.RushLogic)
 local Strings = require(ReplicatedStorage.Shared.Strings)
@@ -168,6 +173,42 @@ function RushHud.start(hop, ui, requestController, skyCamera)
 		joinRemote:FireServer(not player:GetAttribute("RushJoined"))
 	end)
 
+	-- 대기 중 작은 참가 버튼 (누르면 바로 참가하고, 그때부터 위쪽 띠가 보인다)
+	local pill = Instance.new("TextButton")
+	pill.Name = "RushPill"
+	pill.BackgroundColor3 = COLOR.Panel
+	pill.BackgroundTransparency = 0.2
+	pill.Font = Enum.Font.FredokaOne
+	pill.TextSize = 16
+	pill.TextColor3 = COLOR.Text
+	pill.AutomaticSize = Enum.AutomaticSize.X
+	pill.Size = UDim2.fromOffset(0, 34)
+	pill.Visible = false
+	rounded(pill, 17)
+	local pillPadding = Instance.new("UIPadding")
+	pillPadding.PaddingLeft = UDim.new(0, 14)
+	pillPadding.PaddingRight = UDim.new(0, 14)
+	pillPadding.Parent = pill
+	local pillStroke = Instance.new("UIStroke")
+	pillStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	pillStroke.Color = COLOR.Join
+	pillStroke.Thickness = 2
+	pillStroke.Parent = pill
+	pill.Parent = gui
+	pill.Activated:Connect(function()
+		joinRemote:FireServer(true)
+	end)
+
+	-- 튜토리얼을 끝냈는가 (하늘 지도와 같은 조건)
+	local unlocked = false
+	local function refreshUnlock()
+		local raw = player:GetAttribute("RequestProgress")
+		local ok, progress = pcall(HttpService.JSONDecode, HttpService, if type(raw) == "string" then raw else "{}")
+		unlocked = ok and RequestLogic.isMapUnlocked(Requests, progress)
+	end
+	refreshUnlock()
+	player:GetAttributeChangedSignal("RequestProgress"):Connect(refreshUnlock)
+
 	-- 화면 가운데 큰 글씨 (카운트다운, 출발)
 	local center = label(gui, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -251,6 +292,12 @@ function RushHud.start(hop, ui, requestController, skyCamera)
 			bannerSub.TextSize = 15
 		end
 		bannerSub.Size = UDim2.new(1, -110, 0, 18)
+		-- 작은 버튼: PC는 왼쪽 위 시점·마커 표시 아래, 터치는 왼쪽 위 (의뢰 중에는 그 자리를 의뢰 진행 표시가 쓰고 버튼은 숨는다)
+		local touch = UserInputService.TouchEnabled
+		pill.Position = if not touch
+			then UDim2.fromOffset(12, 58)
+			elseif narrow then UDim2.fromOffset(12, 118)
+			else UDim2.fromOffset(12, 8)
 		result.Size = UDim2.fromOffset(math.min(340, viewport.X - 24), 186)
 		center.Size = UDim2.fromOffset(math.min(600, viewport.X - 24), 70)
 		center.TextSize = if viewport.X < 600 then 32 else 44
@@ -349,9 +396,14 @@ function RushHud.start(hop, ui, requestController, skyCamera)
 		bannerText.Text = main
 		bannerSub.Text = sub
 		bannerSub.TextColor3 = subColor
-		-- 의뢰 중에는 같은 자리의 의뢰 진행 표시를 가리지 않게 숨긴다 (탑 위에 있을 때는 의뢰가 이미 취소됐다)
-		-- 대화창·엔딩 카드가 떠 있을 때도 숨긴다 (반투명 카드 뒤로 비쳐 보였다)
-		banner.Visible = phase ~= nil and (running or not (requestController.isActive() or ui.isBusy()))
+		-- 큰 띠는 참가했거나 탑 위에 있을 때만. 그 밖의 대기 중에는 구석의 작은 버튼만 (튜토리얼을 끝낸 뒤)
+		-- 의뢰 중이거나 대화창·엔딩 카드가 떠 있으면 둘 다 숨긴다 (탑 위에 있을 때는 의뢰가 이미 취소됐다)
+		local busy = requestController.isActive() or ui.isBusy()
+		banner.Visible = phase ~= nil and (running or (joined and not busy))
+		pill.Visible = phase == "Lobby" and not joined and not running and unlocked and not busy
+		if pill.Visible then
+			pill.Text = t("RushPill", left)
+		end
 		joinButton.Visible = not running
 		joinButton.Text = if joined then t("RushLeave") else t("RushJoin")
 		joinButton.BackgroundColor3 = if joined then COLOR.Leave else COLOR.Join
