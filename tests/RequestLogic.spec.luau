@@ -1,6 +1,7 @@
 local Requests = require("../src/ReplicatedStorage/Config/Requests")
 local World = require("../src/ReplicatedStorage/Config/World")
 local RequestLogic = require("../src/ReplicatedStorage/Shared/RequestLogic")
+local Strings = require("../src/ReplicatedStorage/Shared/Strings")
 local WorldGen = require("../src/ReplicatedStorage/Shared/WorldGen")
 local check = require("./check")
 
@@ -44,12 +45,13 @@ return {
 			residentIsland[r.id] = r.island
 		end
 		for _, request in Requests.Requests do
-			local island = islands[residentIsland[request.resident]]
 			local specs = table.clone(request.points or {})
 			if request.target then
 				table.insert(specs, request.target)
 			end
 			for _, spec in specs do
+				local island = islands[spec.island or residentIsland[request.resident]]
+				check.truthy(island ~= nil, request.id .. " point on unknown island")
 				if spec.surface then
 					local x, z = spec.surface[1], spec.surface[2]
 					check.truthy(math.sqrt(x * x + z * z) < island.radius, request.id .. " point off island")
@@ -71,6 +73,29 @@ return {
 					end
 				end
 			end
+		end
+	end,
+
+	["모든 의뢰에 언어별 대사와 목표 문장이 있다"] = function()
+		for code, texts in Strings.languages do
+			for _, request in Requests.Requests do
+				for _, suffix in { "_Line", "_Goal" } do
+					local key = "Req_" .. request.id .. suffix
+					check.truthy(texts[key] ~= nil, code .. " missing " .. key)
+				end
+			end
+		end
+	end,
+
+	["장마다 보스를 열 만큼 의뢰가 있다"] = function()
+		for chapter, spec in Requests.Chapters do
+			local count = 0
+			for _, request in Requests.Requests do
+				if request.chapter == chapter then
+					count += 1
+				end
+			end
+			check.truthy(count >= spec.bossAt, string.format("chapter %d has %d of %d", chapter, count, spec.bossAt))
 		end
 	end,
 

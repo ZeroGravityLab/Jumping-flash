@@ -84,6 +84,9 @@ function RequestController.start(hop, ui)
 				cancelRemote:FireServer(request.id)
 				ui.toast(ui.text(reasonKey))
 			end,
+			notice = function(key)
+				ui.toast(ui.text(key))
+			end,
 		})
 		active = { request = request, startedAt = os.clock(), cleanup = cleanup }
 		updateMarkers(markers)

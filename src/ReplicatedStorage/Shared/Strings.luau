@@ -43,7 +43,9 @@ local LANGUAGES = {
 		Progress = "%d / %d",
 		FailFell = "You fell into the clouds. Try again!",
 		FailBroke = "The pot broke! No stomping while carrying it.",
+		FailBurst = "The flour sack burst! No stomping while carrying it.",
 		FailMissed = "You missed a hoop. Try again!",
+		MurkRegrow = "You touched down, so the murk clumped back together! Pop them all in one go.",
 		FailServer = "Couldn't confirm the request.",
 		ResidentDone = "That's everything for now. Thank you!",
 
@@ -59,6 +61,12 @@ local LANGUAGES = {
 		Req_c1_beacons_Goal = "Light 3 beacons on the floating gardens",
 		Req_c1_dive_Line = "From the summit bell you can see the whole meadow... and how far down it is. Dive through every hoop!",
 		Req_c1_dive_Goal = "Dive from the summit through 5 hoops",
+		Req_c1_laundry_Line = "A gust tore my washing off the line! Shirts are flapping all over the meadow, even up on the sky gardens.",
+		Req_c1_laundry_Goal = "Collect 8 pieces of laundry",
+		Req_c1_murk_Line = "Murk has drifted over the village! Bounce from one to the next and pop them all. Touch the ground and they'll clump back together.",
+		Req_c1_murk_Goal = "Pop all 7 murk without touching the ground",
+		Req_c1_flour_Line = "The mill is turning again! Please take this first sack of flour to Momo's bakery in Skyhaven. Don't stomp, or it'll burst!",
+		Req_c1_flour_Goal = "Carry the flour to Momo's bakery without stomping",
 	},
 	ko = {
 		Perfect = "퍼펙트!",
@@ -103,7 +111,9 @@ local LANGUAGES = {
 		Progress = "%d / %d",
 		FailFell = "구름 속으로 떨어졌어요. 다시 해 봐요!",
 		FailBroke = "화분이 깨졌어요! 들고 있을 땐 밟으면 안 돼요.",
+		FailBurst = "밀가루 자루가 터졌어요! 들고 있을 땐 밟으면 안 돼요.",
 		FailMissed = "고리를 놓쳤어요. 다시 해 봐요!",
+		MurkRegrow = "땅에 닿아서 머크가 다시 뭉쳤어요! 한 번에 전부 터뜨려 봐요.",
 		FailServer = "의뢰를 확인하지 못했어요.",
 		ResidentDone = "지금은 부탁할 게 없어. 고마워!",
 
@@ -119,6 +129,12 @@ local LANGUAGES = {
 		Req_c1_beacons_Goal = "떠 있는 정원의 봉화 3개 켜기",
 		Req_c1_dive_Line = "정상의 종 옆에서는 초원이 다 보여… 아래까지 얼마나 먼지도. 고리를 전부 통과하며 뛰어내려 봐!",
 		Req_c1_dive_Goal = "정상에서 뛰어내려 고리 5개 통과",
+		Req_c1_laundry_Line = "돌풍에 빨래가 몽땅 날아갔어! 초원 여기저기, 하늘 정원 위에서까지 펄럭이고 있어.",
+		Req_c1_laundry_Goal = "빨래 8장 모으기",
+		Req_c1_murk_Line = "마을 위로 머크가 몰려왔어! 하나씩 밟고 튀어 올라 전부 터뜨려 줘. 땅에 닿으면 다시 뭉쳐 버려.",
+		Req_c1_murk_Goal = "땅에 닿지 말고 머크 7개 모두 터뜨리기",
+		Req_c1_flour_Line = "풍차가 다시 돌아! 첫 밀가루를 스카이헤이븐의 모모네 빵집에 갖다줄래? 밟으면 자루가 터져!",
+		Req_c1_flour_Goal = "밟지 말고 모모네 빵집까지 밀가루 배달하기",
 	},
 }
 

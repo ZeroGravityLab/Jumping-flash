@@ -1,10 +1,12 @@
--- 의뢰 유형별 목표 (GDD 6.5): Collect 수집, Beacons 봉화, Rings 고리 다이빙, Delivery 배달.
+-- 의뢰 유형별 목표 (GDD 6.5): Collect 수집, Beacons 봉화, Rings 고리 다이빙, Delivery 배달, Murk 머크 청소.
 -- 목표 오브젝트는 이 플레이어에게만 보이게 hop.localFolder에 만든다 (GDD 6.4)
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local World = require(ReplicatedStorage.Config.World)
+local Tags = require(ReplicatedStorage.Shared.Tags)
 local WorldGen = require(ReplicatedStorage.Shared.WorldGen)
 
 local Objectives = {}
@@ -19,17 +21,34 @@ local COLOR = {
 	RingDone = Color3.fromRGB(140, 255, 160),
 	Pot = Color3.fromRGB(214, 120, 80),
 	Bloom = Color3.fromRGB(255, 150, 200),
+	Sack = Color3.fromRGB(238, 226, 196),
+	Twine = Color3.fromRGB(170, 120, 80),
 	Target = Color3.fromRGB(140, 255, 160),
+	Murk = Color3.fromRGB(92, 74, 118),
+	MurkTuft = Color3.fromRGB(116, 96, 142),
+	Eye = Color3.fromRGB(255, 255, 255),
+	Pupil = Color3.fromRGB(30, 24, 40),
+	Poof = Color3.fromRGB(255, 255, 255),
+	Pin = Color3.fromRGB(200, 160, 110),
+}
+local CLOTH_COLORS = {
+	Color3.fromRGB(120, 180, 240),
+	Color3.fromRGB(255, 170, 190),
+	Color3.fromRGB(255, 222, 120),
+	Color3.fromRGB(150, 220, 160),
+	Color3.fromRGB(250, 250, 250),
 }
 local COLLECT_RADIUS = 5
 local BEACON_RADIUS = 8
 local RING_RADIUS = 9
 local DELIVERY_RADIUS = 9
+local MURK_SIZE = 7
 
 export type Callbacks = {
 	progress: (done: number, total: number) -> (),
 	success: () -> (),
 	fail: (reasonKey: string) -> (),
+	notice: (key: string) -> (), -- 실패는 아니지만 알려 줄 일
 }
 
 local function islandSpec(id: string)
@@ -57,7 +76,7 @@ end
 
 -- 의뢰 좌표 → 월드 위치 (Config/Requests 맨 위 설명 참고)
 function Objectives.resolve(spec, islandId: string, exclude: { Instance }): Vector3?
-	local island = islandSpec(islandId)
+	local island = islandSpec(spec.island or islandId)
 	if not island then
 		return nil
 	end
@@ -106,6 +125,180 @@ local function letter(position: Vector3, parent: Instance): Model
 	light.Parent = model:FindFirstChild("Paper")
 	model.Parent = parent
 	return model
+end
+
+-- 바람에 날아간 빨래 한 장 (티셔츠 모양)
+local function laundry(position: Vector3, parent: Instance, index: number): Model
+	local model = Instance.new("Model")
+	local color = CLOTH_COLORS[(index - 1) % #CLOTH_COLORS + 1]
+	local cloth = part({
+		Name = "Cloth",
+		Size = Vector3.new(2.6, 3, 0.25),
+		Color = color,
+		Material = Enum.Material.Fabric,
+		CFrame = CFrame.new(position),
+		Parent = model,
+	})
+	for _, side in { -1, 1 } do
+		part({
+			Name = "Sleeve",
+			Size = Vector3.new(1.3, 1.1, 0.25),
+			Color = color,
+			Material = Enum.Material.Fabric,
+			CFrame = CFrame.new(position + Vector3.new(side * 1.8, 0.9, 0)) * CFrame.Angles(0, 0, math.rad(side * -20)),
+			Parent = model,
+		})
+	end
+	part({
+		Name = "Pin",
+		Size = Vector3.new(0.35, 0.9, 0.5),
+		Color = COLOR.Pin,
+		CFrame = CFrame.new(position + Vector3.new(0, 1.7, 0)),
+		Parent = model,
+	})
+	local light = Instance.new("PointLight")
+	light.Range = 10
+	light.Brightness = 1.2
+	light.Color = color
+	light.Parent = cloth
+	model.WorldPivot = CFrame.new(position)
+	model.Parent = parent
+	return model
+end
+
+local COLLECT_ITEMS = {
+	Letter = function(position: Vector3, parent: Instance, _: number): Model
+		return letter(position, parent)
+	end,
+	Laundry = laundry,
+}
+
+-- 배달 물건. 원점 기준으로 만들어 머리 위로 옮긴다. fail은 밟았을 때 보여 줄 문자열 키
+local function carriedPot(parent: Instance): Model
+	local model = Instance.new("Model")
+	part({
+		Name = "Pot",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(2.2, 2.4, 2.4),
+		Color = COLOR.Pot,
+		CFrame = CFrame.Angles(0, 0, math.rad(90)),
+		Parent = model,
+	})
+	part({
+		Name = "Bloom",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.new(2.6, 2.6, 2.6),
+		Color = COLOR.Bloom,
+		CFrame = CFrame.new(0, 1.6, 0),
+		Parent = model,
+	})
+	model.WorldPivot = CFrame.new()
+	model.Parent = parent
+	return model
+end
+
+local function carriedFlour(parent: Instance): Model
+	local model = Instance.new("Model")
+	part({
+		Name = "Sack",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.new(3.2, 3.2, 3.2),
+		Color = COLOR.Sack,
+		CFrame = CFrame.new(0, 0.6, 0),
+		Parent = model,
+	})
+	part({
+		Name = "Neck",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.8, 1.3, 1.3),
+		Color = COLOR.Sack,
+		CFrame = CFrame.new(0, 2.4, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Parent = model,
+	})
+	part({
+		Name = "Twine",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.3, 1.5, 1.5),
+		Color = COLOR.Twine,
+		CFrame = CFrame.new(0, 2.2, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Parent = model,
+	})
+	model.WorldPivot = CFrame.new()
+	model.Parent = parent
+	return model
+end
+
+local CARRIED = {
+	Pot = { build = carriedPot, fail = "FailBroke" },
+	Flour = { build = carriedFlour, fail = "FailBurst" },
+}
+
+-- 머크 덩어리. 몸통만 밟기 판정(Stompable)에 잡히고 장식은 빠진다
+local function murk(position: Vector3, parent: Instance): (Model, BasePart)
+	local model = Instance.new("Model")
+	model.Name = "Murk"
+	local body = part({
+		Name = "Body",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.one * MURK_SIZE,
+		Color = COLOR.Murk,
+		Material = Enum.Material.Sand,
+		CanQuery = true,
+		CFrame = CFrame.new(position),
+		Parent = model,
+	})
+	CollectionService:AddTag(body, Tags.Stompable)
+	for i = 1, 6 do
+		local angle = i / 6 * math.pi * 2
+		part({
+			Name = "Tuft",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * 3.4,
+			Color = COLOR.MurkTuft,
+			Material = Enum.Material.Sand,
+			CFrame = CFrame.new(position + Vector3.new(math.cos(angle) * 3, -1.2, math.sin(angle) * 3)),
+			Parent = model,
+		})
+	end
+	for _, side in { -1, 1 } do
+		part({
+			Name = "Eye",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * 1.5,
+			Color = COLOR.Eye,
+			CFrame = CFrame.new(position + Vector3.new(side * 1.2, 0.8, -3)),
+			Parent = model,
+		})
+		part({
+			Name = "Pupil",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * 0.7,
+			Color = COLOR.Pupil,
+			CFrame = CFrame.new(position + Vector3.new(side * 1.1, 0.7, -3.6)),
+			Parent = model,
+		})
+	end
+	model.WorldPivot = CFrame.new(position)
+	model.Parent = parent
+	return model, body
+end
+
+-- 머크가 "퐁" 하고 구름으로 흩어진다 (GDD 6.1)
+local function poof(position: Vector3, parent: Instance)
+	local cloud = part({
+		Name = "Poof",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.one * MURK_SIZE,
+		Color = COLOR.Poof,
+		Transparency = 0.2,
+		CFrame = CFrame.new(position),
+		Parent = parent,
+	})
+	TweenService:Create(cloud, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = Vector3.one * MURK_SIZE * 2.4,
+		Transparency = 1,
+	}):Play()
+	task.delay(0.45, cloud.Destroy, cloud)
 end
 
 local function beacon(position: Vector3, parent: Instance): BasePart
@@ -162,31 +355,32 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 	local folder = Instance.new("Folder")
 	folder.Name = "Request_" .. request.id
 	folder.Parent = hop.localFolder
-	local exclude = { hop.character(), hop.localFolder }
+	-- 밟을 수 있는 목표는 밟기 판정이 localFolder를 건너뛰므로 따로 둔다 (역시 복제되지 않는다)
+	local solid = Instance.new("Folder")
+	solid.Name = "RequestSolid_" .. request.id
+	solid.Parent = workspace
+	local exclude = { hop.character(), hop.localFolder, solid }
 	local connections = {}
 	local finished = false
 
-	local function finish(ok: boolean, reason: string?)
-		if finished then
-			return
-		end
-		finished = true
-		for _, c in connections do
-			c:Disconnect()
-		end
-		folder:Destroy()
-		if ok then
-			callbacks.success()
-		else
-			callbacks.fail(reason or "FailServer")
-		end
-	end
 	local function cleanup()
 		finished = true
 		for _, c in connections do
 			c:Disconnect()
 		end
 		folder:Destroy()
+		solid:Destroy()
+	end
+	local function finish(ok: boolean, reason: string?)
+		if finished then
+			return
+		end
+		cleanup()
+		if ok then
+			callbacks.success()
+		else
+			callbacks.fail(reason or "FailServer")
+		end
 	end
 	table.insert(
 		connections,
@@ -196,11 +390,12 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 	)
 
 	if request.type == "Collect" then
+		local build = COLLECT_ITEMS[request.item or "Letter"]
 		local items = {}
-		for _, spec in request.points do
+		for i, spec in request.points do
 			local position = Objectives.resolve(spec, islandId, exclude)
 			if position then
-				table.insert(items, { model = letter(position, folder), position = position })
+				table.insert(items, { model = build(position, folder, i), position = position })
 			end
 		end
 		local total, done = #items, 0
@@ -323,18 +518,17 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 		)
 	elseif request.type == "Delivery" then
 		local target = Objectives.resolve(request.target, islandId, exclude)
-		local pot = part({
-			Name = "Pot",
+		local carried = CARRIED[request.item or "Pot"]
+		local load = carried.build(folder)
+		-- 멀리서도 배달지가 보이게 빛기둥을 세운다
+		part({
+			Name = "Pillar",
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2.2, 2.4, 2.4),
-			Color = COLOR.Pot,
-			Parent = folder,
-		})
-		local bloom = part({
-			Name = "Bloom",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(2.6, 2.6, 2.6),
-			Color = COLOR.Bloom,
+			Size = Vector3.new(90, 3, 3),
+			Color = COLOR.Target,
+			Material = Enum.Material.Neon,
+			Transparency = 0.6,
+			CFrame = CFrame.new(target + Vector3.new(0, 45, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			Parent = folder,
 		})
 		local marker = part({
@@ -358,9 +552,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 				if not root then
 					return
 				end
-				local head = root.Position + Vector3.new(0, 4.2, 0)
-				pot.CFrame = CFrame.new(head) * CFrame.Angles(0, 0, math.rad(90))
-				bloom.CFrame = CFrame.new(head + Vector3.new(0, 1.6, 0))
+				load:PivotTo(CFrame.new(root.Position + Vector3.new(0, 4.2, 0)))
 				if (hop.feetPosition() - target).Magnitude <= DELIVERY_RADIUS then
 					callbacks.progress(1, 1)
 					finish(true)
@@ -371,7 +563,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 			connections,
 			hop.onLand:Connect(function(stomped)
 				if stomped then
-					finish(false, "FailBroke")
+					finish(false, carried.fail)
 				end
 			end)
 		)
@@ -379,8 +571,72 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 			connections,
 			hop.onBounce:Connect(function(kind)
 				if kind == "stomp" or kind == "buddy" then
-					finish(false, "FailBroke")
+					finish(false, carried.fail)
 				end
+			end)
+		)
+	elseif request.type == "Murk" then
+		local blobs = {}
+		for _, spec in request.points do
+			local position = Objectives.resolve(spec, islandId, exclude)
+			if position then
+				local model, body = murk(position, solid)
+				table.insert(blobs, { position = position, model = model, body = body })
+			end
+		end
+		local total, done = #blobs, 0
+		callbacks.progress(0, total)
+		-- 둥실거리며 카메라 쪽을 바라본다
+		table.insert(
+			connections,
+			RunService.Heartbeat:Connect(function()
+				local t = os.clock()
+				local eye = workspace.CurrentCamera.CFrame.Position
+				for i, b in blobs do
+					if not b.popped then
+						local p = b.position + Vector3.new(0, math.sin(t * 1.6 + i) * 0.8, 0)
+						local facing = Vector3.new(eye.X, p.Y, eye.Z)
+						b.model:PivotTo(
+							if (facing - p).Magnitude > 0.1 then CFrame.lookAt(p, facing) else CFrame.new(p)
+						)
+					end
+				end
+			end)
+		)
+		table.insert(
+			connections,
+			hop.onBounce:Connect(function(_, _, _, hitPart)
+				for _, b in blobs do
+					if not b.popped and b.body == hitPart then
+						b.popped = true
+						poof(b.position, folder)
+						b.model:Destroy()
+						done += 1
+						callbacks.progress(done, total)
+						if done == total then
+							finish(true)
+						end
+						return
+					end
+				end
+			end)
+		)
+		-- 땅(지붕 포함)에 내려앉으면 터뜨린 머크가 모두 다시 뭉친다
+		table.insert(
+			connections,
+			hop.onLand:Connect(function()
+				if done == 0 or done == total then
+					return
+				end
+				for _, b in blobs do
+					if b.popped then
+						b.popped = false
+						b.model, b.body = murk(b.position, solid)
+					end
+				end
+				done = 0
+				callbacks.progress(0, total)
+				callbacks.notice("MurkRegrow")
 			end)
 		)
 	end

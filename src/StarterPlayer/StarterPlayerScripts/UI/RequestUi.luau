@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Strings = require(ReplicatedStorage.Shared.Strings)
 
@@ -89,6 +90,77 @@ local toastLabel: TextLabel
 local onStartCallback: (() -> ())? = nil
 local resultToken = 0
 
+-- 대화창 글자 배치: 넓은 화면과 좁은 화면(세로 휴대폰). 좁으면 메달 기준을 버튼 위 전체 폭으로 쓴다
+local DIALOG_LAYOUT = {
+	wide = {
+		height = 200,
+		name = { y = 12, h = 28, size = 26 },
+		line = { y = 44, h = 52, size = 19 },
+		goal = { y = 100, h = 24, size = 20 },
+		medals = { y = 128, size = 16 },
+		best = { y = 152, size = 16 },
+		textInset = 300,
+	},
+	narrow = {
+		height = 250,
+		name = { y = 10, h = 24, size = 22 },
+		line = { y = 38, h = 66, size = 16 },
+		goal = { y = 106, h = 40, size = 17 },
+		medals = { y = 150, size = 15 },
+		best = { y = 170, size = 15 },
+		textInset = 40,
+	},
+}
+
+-- 화면 크기에 맞춘 배치. 터치 기기는 오른쪽 아래(밟기·점프 버튼)를 비우고,
+-- 세로 화면에서는 위쪽 고도 표시 아래로 내린다
+local function layout()
+	local camera = workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+	local touch = UserInputService.TouchEnabled
+	local portrait = viewport.Y > viewport.X
+
+	local width = math.min(560, viewport.X - 24)
+	local spec = if width < 520 then DIALOG_LAYOUT.narrow else DIALOG_LAYOUT.wide
+	dialog.Size = UDim2.fromOffset(width, spec.height)
+	for _, item in
+		{
+			{ dialogName, spec.name },
+			{ dialogLine, spec.line },
+			{ dialogGoal, spec.goal },
+		}
+	do
+		item[1].Position = UDim2.fromOffset(20, item[2].y)
+		item[1].Size = UDim2.new(1, -40, 0, item[2].h)
+		item[1].TextSize = item[2].size
+	end
+	for _, item in { { dialogMedals, spec.medals }, { dialogBest, spec.best } } do
+		item[1].Position = UDim2.fromOffset(20, item[2].y)
+		item[1].Size = UDim2.new(1, -spec.textInset, 0, 20)
+		item[1].TextSize = item[2].size
+	end
+
+	if not touch then
+		tracker.AnchorPoint = Vector2.new(1, 0)
+		tracker.Position = UDim2.new(1, -12, 0, 220)
+		tracker.Size = UDim2.fromOffset(320, 84)
+	elseif portrait then
+		tracker.AnchorPoint = Vector2.new(0, 0)
+		tracker.Position = UDim2.fromOffset(12, 118)
+		tracker.Size = UDim2.fromOffset(math.min(280, viewport.X - 134), 84)
+	else
+		tracker.AnchorPoint = Vector2.new(0, 0)
+		tracker.Position = UDim2.fromOffset(12, 8)
+		tracker.Size = UDim2.fromOffset(250, 84)
+	end
+	trackerGoal.TextSize = if touch then 15 else 17
+
+	result.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 170)
+	toastLabel.Position = UDim2.new(0.5, 0, 0, if touch and portrait then 214 else 120)
+	toastLabel.Size = UDim2.fromOffset(math.min(600, viewport.X - 24), 56)
+	toastLabel.TextSize = if viewport.X < 600 then 20 else 24
+end
+
 function RequestUi.start()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "SkyhopRequests"
@@ -101,27 +173,11 @@ function RequestUi.start()
 		Position = UDim2.new(0.5, 0, 1, -90),
 		Size = UDim2.fromOffset(560, 200),
 	})
-	dialogName = label(dialog, { Position = UDim2.fromOffset(20, 12), Size = UDim2.new(1, -40, 0, 28), TextSize = 26 })
-	dialogLine = label(dialog, {
-		Position = UDim2.fromOffset(20, 44),
-		Size = UDim2.new(1, -40, 0, 52),
-		TextSize = 19,
-		TextColor3 = COLOR.Soft,
-		TextYAlignment = Enum.TextYAlignment.Top,
-	})
-	dialogGoal = label(dialog, { Position = UDim2.fromOffset(20, 100), Size = UDim2.new(1, -40, 0, 24), TextSize = 20 })
-	dialogMedals = label(dialog, {
-		Position = UDim2.fromOffset(20, 128),
-		Size = UDim2.new(1, -300, 0, 20),
-		TextSize = 16,
-		TextColor3 = COLOR.gold,
-	})
-	dialogBest = label(dialog, {
-		Position = UDim2.fromOffset(20, 152),
-		Size = UDim2.new(1, -300, 0, 20),
-		TextSize = 16,
-		TextColor3 = COLOR.Soft,
-	})
+	dialogName = label(dialog, {})
+	dialogLine = label(dialog, { TextColor3 = COLOR.Soft, TextYAlignment = Enum.TextYAlignment.Top })
+	dialogGoal = label(dialog, { TextYAlignment = Enum.TextYAlignment.Top })
+	dialogMedals = label(dialog, { TextColor3 = COLOR.gold })
+	dialogBest = label(dialog, { TextColor3 = COLOR.Soft })
 	dialog.Name = "Dialog"
 	startButton = button(dialog, COLOR.Accept, UDim2.new(1, -16, 1, -16))
 	startButton.Name = "StartButton"
@@ -137,12 +193,8 @@ function RequestUi.start()
 	end)
 	laterButton.Activated:Connect(RequestUi.hideDialog)
 
-	tracker = panel(gui, {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 220),
-		Size = UDim2.fromOffset(320, 84),
-	})
-	trackerGoal = label(tracker, { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -28, 0, 40), TextSize = 17 })
+	tracker = panel(gui, {})
+	trackerGoal = label(tracker, { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(1, -28, 0, 40) })
 	trackerProgress = label(tracker, {
 		Position = UDim2.fromOffset(14, 52),
 		Size = UDim2.new(0.5, -14, 0, 24),
@@ -159,7 +211,6 @@ function RequestUi.start()
 	result = panel(gui, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.42),
-		Size = UDim2.fromOffset(380, 170),
 	})
 	resultTitle = label(result, {
 		Position = UDim2.fromOffset(0, 14),
@@ -186,10 +237,7 @@ function RequestUi.start()
 	toastLabel = label(gui, {
 		Name = "Toast",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 120),
-		Size = UDim2.fromOffset(600, 32),
 		Text = "",
-		TextSize = 24,
 		TextColor3 = COLOR.Fail,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextTransparency = 1,
@@ -200,6 +248,12 @@ function RequestUi.start()
 	stroke.Color = Color3.fromRGB(60, 30, 40)
 	stroke.Transparency = 1
 	stroke.Parent = toastLabel
+
+	layout()
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+	end
 end
 
 function RequestUi.text(key: string, ...: any): string

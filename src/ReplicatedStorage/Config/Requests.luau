@@ -2,6 +2,8 @@
 -- surface 좌표 {x, z, 높이}: 그 자리 맨 위 표면(지붕·땅) 위로 높이만큼 띄운다. 이 지점 주변엔 나무를 심지 않는다
 -- air 좌표 {x, y, z}: 섬 윗면 높이 기준의 고정 위치
 -- satellite 좌표 {n, 높이}: 그 섬의 n번째 나선 섬 윗면 위
+-- 좌표에 island를 적으면 주민의 섬 대신 그 섬 기준이다 (섬을 건너는 배달)
+-- item: 수집·배달 물건의 모양 (없으면 편지·화분)
 -- 시간은 초. minTime보다 빨리 끝난 보고는 서버가 거절한다
 return {
 	MedalCoins = { bronze = 15, silver = 25, gold = 40 },
@@ -14,6 +16,7 @@ return {
 		{ id = "Pip", island = "Skyhaven", x = 28, z = 34, yaw = 210, color = { 120, 170, 230 } },
 		{ id = "Momo", island = "Skyhaven", x = -44, z = 18, yaw = 120, color = { 240, 170, 150 } },
 		{ id = "Rhea", island = "WindmillMeadow", x = -36, z = 22, yaw = 160, color = { 170, 140, 220 } },
+		{ id = "Bram", island = "WindmillMeadow", x = -4, z = 34, yaw = 150, color = { 214, 180, 110 } },
 	},
 
 	Requests = {
@@ -105,6 +108,60 @@ return {
 			gold = 110,
 			silver = 180,
 			minTime = 12,
+		},
+		{
+			id = "c1_laundry",
+			chapter = 1,
+			resident = "Bram",
+			type = "Collect",
+			item = "Laundry",
+			-- 지붕, 나선 섬 정원, 상승 기류 속, 퍼플링 줄 끝, 바운스 꽃 위
+			points = {
+				{ surface = { -66, 58, 3 } },
+				{ surface = { 58, -70, 3 } },
+				{ satellite = { 1, 3 } },
+				{ satellite = { 2, 3 } },
+				{ satellite = { 3, 3 } },
+				{ air = { -38, 170, -52 } },
+				{ air = { 124, 186, 40 } },
+				{ air = { -20, 100, 90 } },
+			},
+			gold = 90,
+			silver = 150,
+			minTime = 25,
+		},
+		{
+			id = "c1_murk",
+			chapter = 1,
+			resident = "Bram",
+			type = "Murk",
+			requires = { "c1_laundry" },
+			-- 집 지붕에서 시작해 마을 위를 감아 오른다. 땅에 닿으면 터뜨린 머크가 다시 뭉친다
+			points = {
+				{ surface = { -66, 58, 5 } },
+				{ air = { -46, 48, 78 } },
+				{ air = { -17, 60, 70 } },
+				{ air = { -4, 72, 42 } },
+				{ air = { -17, 84, 14 } },
+				{ air = { -46, 96, 6 } },
+				{ air = { -71, 108, 24 } },
+			},
+			gold = 22,
+			silver = 40,
+			minTime = 8,
+		},
+		{
+			id = "c1_flour",
+			chapter = 1,
+			resident = "Bram",
+			type = "Delivery",
+			item = "Flour",
+			requires = { "c1_murk" },
+			-- 징검다리 섬을 건너 허브 빵집(모모)까지
+			target = { surface = { -54, 30, 0 }, island = "Skyhaven" },
+			gold = 32,
+			silver = 55,
+			minTime = 14,
 		},
 	},
 }

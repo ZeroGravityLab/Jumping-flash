@@ -16,7 +16,7 @@ local player = Players.LocalPlayer
 
 local HopController = {
 	onJump = Signal.new(), -- (index, perfect, feetPosition)
-	onBounce = Signal.new(), -- (kind: "stomp" | "pad" | "buddy", combo, feetPosition)
+	onBounce = Signal.new(), -- (kind: "stomp" | "pad" | "buddy", combo, feetPosition, part?)
 	onLand = Signal.new(), -- (stomped, feetPosition)
 	onBell = Signal.new(), -- (feetPosition)
 	onRespawn = Signal.new(), -- 구름 바다로 떨어져 되돌아왔을 때
@@ -233,7 +233,7 @@ function HopController.stomp()
 	root.AssemblyLinearVelocity = Vector3.new(0, -Movement.StompDive, 0)
 end
 
-local function bounce(kind: string, velocity: number)
+local function bounce(kind: string, velocity: number, part: BasePart?)
 	if kind == "pad" then
 		jumpsUsed = 1
 	else
@@ -241,7 +241,7 @@ local function bounce(kind: string, velocity: number)
 		combo += 1
 	end
 	launch(velocity)
-	HopController.onBounce:Fire(kind, combo, HopController.feetPosition())
+	HopController.onBounce:Fire(kind, combo, HopController.feetPosition(), part)
 end
 
 local function popPuffling(part: BasePart)
@@ -270,11 +270,11 @@ local function tryBounce(hit: RaycastResult): boolean
 	if CollectionService:HasTag(part, Tags.Stompable) then
 		popPuffling(part)
 		HopController.stats.stomps += 1
-		bounce("stomp", Movement.StompBounce)
+		bounce("stomp", Movement.StompBounce, part)
 	elseif CollectionService:HasTag(part, Tags.BouncePad) then
-		bounce("pad", Movement.BouncePadVelocity)
+		bounce("pad", Movement.BouncePadVelocity, part)
 	elseif isOtherCharacter(part) then
-		bounce("buddy", Movement.StompBounce * Movement.BuddyBounceMult)
+		bounce("buddy", Movement.StompBounce * Movement.BuddyBounceMult, part)
 	else
 		return false
 	end

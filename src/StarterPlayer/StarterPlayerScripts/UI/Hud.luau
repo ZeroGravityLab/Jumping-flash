@@ -180,6 +180,7 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 		Position = UDim2.fromScale(0.5, 0.3),
 		Size = UDim2.fromOffset(480, 64),
 		TextSize = 44,
+		TextWrapped = true,
 		TextTransparency = 1,
 	})
 	local popupStroke = popup:FindFirstChildOfClass("UIStroke")
@@ -197,18 +198,28 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 		TweenService:Create(popupStroke, fade, { Transparency = 1 }):Play()
 	end
 
-	-- 시점·마커 상태
+	-- 시점·마커 상태. 터치 화면은 왼쪽 위를 의뢰 진행 표시에 내주고, 바뀔 때만 남은 점프 표시 위에 잠깐 띄운다
+	local touch = UserInputService.TouchEnabled
 	local status = newLabel(gui, {
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.fromOffset(320, 44),
+		AnchorPoint = if touch then Vector2.new(0.5, 1) else Vector2.zero,
+		Position = if touch then UDim2.new(0.5, 0, 1, -80) else UDim2.fromOffset(12, 8),
+		Size = UDim2.fromOffset(if touch then 220 else 320, 44),
 		TextSize = 18,
-		TextXAlignment = Enum.TextXAlignment.Left,
+		TextXAlignment = if touch then Enum.TextXAlignment.Center else Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
 	})
+	local statusStroke = status:FindFirstChildOfClass("UIStroke")
 	local function refreshStatus()
 		local view = if skyCamera.mode == "First" then t("ViewFirst") else t("ViewSky")
 		local marker = if landingMarker.enabled then t("MarkerOn") else t("MarkerOff")
 		status.Text = view .. "\n" .. marker
+		if touch then
+			status.TextTransparency = 0
+			statusStroke.Transparency = 0
+			local fade = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 1.6)
+			TweenService:Create(status, fade, { TextTransparency = 1 }):Play()
+			TweenService:Create(statusStroke, fade, { Transparency = 1 }):Play()
+		end
 	end
 	refreshStatus()
 	skyCamera.onModeChanged:Connect(refreshStatus)
@@ -268,26 +279,34 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 		})
 	end
 
-	-- 모바일 버튼. 밟기 버튼은 기본 점프 버튼 바로 위에 둔다
-	if UserInputService.TouchEnabled then
+	-- 모바일 버튼. 밟기 버튼은 기본 점프 버튼 바로 위에 둔다.
+	-- 세로 화면은 위쪽 가운데의 고도 표시와 겹치지 않게 시점·기록 버튼을 오른쪽에 세로로 쌓는다
+	if touch then
 		local stompButton = newButton(gui, t("ButtonStomp"), UDim2.fromOffset(84, 84), UDim2.new(1, -110, 1, -240))
-		local function placeStomp()
-			local camera = workspace.CurrentCamera
-			local viewport = if camera then camera.ViewportSize else Vector2.new(1000, 1000)
-			local small = math.min(viewport.X, viewport.Y) <= 500
-			stompButton.Size = if small then UDim2.fromOffset(64, 64) else UDim2.fromOffset(96, 96)
-			stompButton.Position = if small then UDim2.new(1, -60, 1, -130) else UDim2.new(1, -110, 1, -270)
-		end
-		placeStomp()
-		if workspace.CurrentCamera then
-			workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placeStomp)
-		end
 		stompButton.Activated:Connect(hop.stomp)
-
 		local viewButton = newButton(gui, t("ButtonView"), UDim2.fromOffset(96, 40), UDim2.new(1, -70, 0, 30))
 		viewButton.Activated:Connect(skyCamera.toggle)
 		local statsButton = newButton(gui, t("ButtonStats"), UDim2.fromOffset(96, 40), UDim2.new(1, -176, 0, 30))
 		statsButton.Activated:Connect(toggleStats)
+
+		local function placeTouch()
+			local camera = workspace.CurrentCamera
+			local viewport = if camera then camera.ViewportSize else Vector2.new(1000, 1000)
+			local small = math.min(viewport.X, viewport.Y) <= 500
+			local portrait = viewport.Y > viewport.X
+			stompButton.Size = if small then UDim2.fromOffset(64, 64) else UDim2.fromOffset(96, 96)
+			stompButton.Position = if small then UDim2.new(1, -60, 1, -130) else UDim2.new(1, -110, 1, -270)
+			viewButton.Position = if portrait then UDim2.new(1, -58, 0, 140) else UDim2.new(1, -70, 0, 30)
+			statsButton.Position = if portrait then UDim2.new(1, -58, 0, 188) else UDim2.new(1, -176, 0, 30)
+			statsPanel.Position = if portrait then UDim2.new(1, -12, 0, 236) else UDim2.new(1, -12, 0, 60)
+			statsPanel.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 150)
+			-- 좁은 화면에서는 긴 팝업("DING! ...")이 두 줄로 접힌다
+			popup.Size = UDim2.fromOffset(math.min(480, viewport.X - 16), if viewport.X < 500 then 110 else 64)
+		end
+		placeTouch()
+		if workspace.CurrentCamera then
+			workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placeTouch)
+		end
 	end
 
 	UserInputService.InputBegan:Connect(function(input, processed)

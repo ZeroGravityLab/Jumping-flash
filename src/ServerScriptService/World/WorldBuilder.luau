@@ -38,17 +38,18 @@ local function requestSpots(islandId: string): ({ any }, { [number]: boolean })
 	end
 	local surface, satellites = {}, {}
 	for _, request in Requests.Requests do
-		if residentIsland[request.resident] == islandId then
-			local specs = table.clone(request.points or {})
-			if request.target then
-				table.insert(specs, request.target)
+		local specs = table.clone(request.points or {})
+		if request.target then
+			table.insert(specs, request.target)
+		end
+		for _, spec in specs do
+			if (spec.island or residentIsland[request.resident]) ~= islandId then
+				continue
 			end
-			for _, spec in specs do
-				if spec.surface then
-					table.insert(surface, { x = spec.surface[1], z = spec.surface[2] })
-				elseif spec.satellite then
-					satellites[spec.satellite[1]] = true
-				end
+			if spec.surface then
+				table.insert(surface, { x = spec.surface[1], z = spec.surface[2] })
+			elseif spec.satellite then
+				satellites[spec.satellite[1]] = true
 			end
 		end
 	end
