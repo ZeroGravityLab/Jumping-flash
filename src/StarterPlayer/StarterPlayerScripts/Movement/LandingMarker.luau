@@ -114,7 +114,7 @@ function LandingMarker.start(hop)
 	end)
 
 	UserInputService.InputBegan:Connect(function(input, processed)
-		if not processed and input.KeyCode == Enum.KeyCode.M then
+		if not processed and input.KeyCode == Enum.KeyCode.L then
 			LandingMarker.enabled = not LandingMarker.enabled
 			LandingMarker.onToggled:Fire(LandingMarker.enabled)
 		end

@@ -137,6 +137,55 @@ return {
 		check.equal(RequestLogic.nextFor(Requests, "Pip", progress), nil)
 	end,
 
+	["주민 상태: 새 의뢰 → 메달 올리기 → 모두 금 / 선행이 남으면 잠김"] = function()
+		check.equal(RequestLogic.residentState(Requests, "Pip", {}), "new")
+		local progress = {
+			tut_letters = { medal = "silver", bestTime = 60 },
+			tut_dive = { medal = "gold", bestTime = 20 },
+		}
+		check.equal(RequestLogic.residentState(Requests, "Pip", progress), "improve")
+		progress.tut_letters = { medal = "gold", bestTime = 30 }
+		check.equal(RequestLogic.residentState(Requests, "Pip", progress), "done")
+		-- 선행 의뢰가 다른 주민의 것이면 잠긴다 (가상의 설정)
+		local config = {
+			Requests = {
+				{ id = "a", resident = "A" },
+				{ id = "b", resident = "B", requires = { "a" } },
+			},
+		}
+		check.equal(RequestLogic.residentState(config, "B", {}), "locked")
+	end,
+
+	["튜토리얼(0장)을 모두 끝내야 장 완료"] = function()
+		local progress = {}
+		check.equal(RequestLogic.chapterComplete(Requests, 0, progress), false)
+		for _, request in Requests.Requests do
+			if request.chapter == 0 then
+				progress[request.id] = { medal = "bronze", bestTime = 99 }
+			end
+		end
+		check.equal(RequestLogic.chapterComplete(Requests, 0, progress), true)
+		check.equal(RequestLogic.chapterComplete(Requests, 1, progress), false)
+		local done, total = RequestLogic.chapterCount(Requests, 1, progress)
+		check.equal(done, 0)
+		check.truthy(total >= Requests.Chapters[1].bossAt)
+	end,
+
+	["하늘 지도의 섬 이름이 모든 언어에 있다"] = function()
+		local ids = {}
+		for _, island in World.Islands do
+			table.insert(ids, island.id)
+		end
+		for _, upcoming in World.MapUpcoming do
+			table.insert(ids, upcoming.id)
+		end
+		for code, texts in Strings.languages do
+			for _, id in ids do
+				check.truthy(texts["Island_" .. id] ~= nil, code .. " missing Island_" .. id)
+			end
+		end
+	end,
+
 	["너무 빠른 보고는 거절한다"] = function()
 		check.equal(RequestLogic.isPlausible(letters, letters.minTime - 1), false)
 		check.equal(RequestLogic.isPlausible(letters, letters.minTime), true)

@@ -32,6 +32,7 @@ return {
 			},
 			features = {
 				{ type = "Bell", x = 0, z = 0 },
+				{ type = "MapTable", x = 14, z = 8 }, -- 스폰(0, 22) 앞. 하늘 지도를 연다
 				{ type = "BounceFlower", x = 34, z = 74 },
 				{ type = "BounceFlower", x = -96, z = -14 },
 				{ type = "Pufflings", x = -54, z = 104, heights = { 9, 14, 19 }, step = 16 },
@@ -67,6 +68,17 @@ return {
 			summit = { height = 470, radius = 30 },
 		},
 	},
+
+	-- 하늘 지도에만 보이는 앞으로의 섬 (GDD 6.3, 아직 월드에 없다). 좌표는 지도에 놓을 월드 x, z.
+	-- 이름은 Strings의 Island_<id>
+	MapUpcoming = {
+		{ id = "Clockwork", chapter = 2, x = -520, z = -380 },
+		{ id = "Candy", chapter = 3, x = -660, z = 300 },
+		{ id = "Storm", chapter = 4, x = 40, z = 640 },
+		{ id = "Moon", chapter = 5, x = 660, z = 460 },
+		{ id = "SkyEnd", x = 120, z = -700 }, -- 최종장: 하늘 끝
+	},
+	MapUpcomingRadius = 110,
 
 	-- 허브에서 1장으로 건너가는 징검다리 (자산 Islet, {x, 윗면 y, z, 크기 배율})
 	SteppingStones = {

@@ -1,4 +1,4 @@
--- 이동 장치: 종, 바운스 꽃, 퍼플링, 구름 계단, 상승 기류 (GDD 8.2~8.3).
+-- 이동 장치: 종, 바운스 꽃, 퍼플링, 구름 계단, 상승 기류 (GDD 8.2~8.3). 허브의 지도 탁자도 여기서 만든다.
 -- 태그로 동작을 정하고(HopController가 읽는다) 모양은 파트로 만든다
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +19,7 @@ local COLOR = {
 	Puffling = Color3.fromRGB(255, 246, 252),
 	Cheek = Color3.fromRGB(255, 170, 200),
 	Eye = Color3.fromRGB(40, 40, 60),
+	MapSky = Color3.fromRGB(150, 200, 245),
 }
 
 local function part(props: { [string]: any }): Part
@@ -96,6 +97,60 @@ function Features.Bell(top: Vector3, spec, parent: Instance)
 	light.Brightness = 1.5
 	light.Parent = bell
 	CollectionService:AddTag(bell, Tags.Bell)
+	model.Parent = parent
+end
+
+-- 지도 탁자: 돌 받침 위 하늘빛 원판에 작은 섬들. 말을 걸면 하늘 지도가 열린다 (클라이언트 SkyMap)
+function Features.MapTable(top: Vector3, spec, parent: Instance)
+	local base = groundOrTop(top, spec.x, spec.z)
+	local model = Instance.new("Model")
+	model.Name = "MapTable"
+	part({
+		Name = "Stand",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(3.2, 4, 4),
+		CFrame = CFrame.new(base + Vector3.new(0, 1.6, 0)) * UPRIGHT,
+		Color = COLOR.StoneDark,
+		Material = Enum.Material.Slate,
+		Parent = model,
+	})
+	local face = part({
+		Name = "Face",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.6, 10, 10),
+		CFrame = CFrame.new(base + Vector3.new(0, 3.5, 0)) * UPRIGHT,
+		Color = COLOR.MapSky,
+		Parent = model,
+	})
+	-- 허브, 1장 섬, 아직 흐린 섬들
+	for _, isle in
+		{
+			{ 0, 0, 2.2, COLOR.Stem },
+			{ 2.8, -0.6, 1.8, COLOR.Stem },
+			{ -2.6, -2.2, 1.2, COLOR.StoneDark },
+			{ -3.1, 1.6, 1.2, COLOR.StoneDark },
+			{ 0.2, 3.4, 1.2, COLOR.StoneDark },
+			{ 3.1, 2.4, 1.2, COLOR.StoneDark },
+		}
+	do
+		decorative(part({
+			Name = "Isle",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(isle[3] * 0.5, isle[3], isle[3]),
+			CFrame = CFrame.new(base + Vector3.new(isle[1], 3.8 + isle[3] * 0.25, isle[2])) * UPRIGHT,
+			Color = isle[4],
+			Material = Enum.Material.Grass,
+			Parent = model,
+		}))
+	end
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "View map" -- 클라이언트가 언어에 맞게 바꾼다
+	prompt.ObjectText = "Sky Map"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt:SetAttribute("SkyMap", true)
+	prompt.Parent = face
 	model.Parent = parent
 end
 

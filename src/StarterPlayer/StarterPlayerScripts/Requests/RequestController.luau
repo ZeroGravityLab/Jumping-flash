@@ -38,8 +38,7 @@ end
 local function updateMarkers(markers: { [string]: BillboardGui })
 	local current = progress()
 	for residentId, marker in markers do
-		local request = RequestLogic.nextFor(Requests, residentId, current)
-		marker.Enabled = request ~= nil and current[request.id] == nil and active == nil
+		marker.Enabled = active == nil and RequestLogic.residentState(Requests, residentId, current) == "new"
 	end
 end
 

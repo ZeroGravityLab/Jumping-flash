@@ -105,7 +105,7 @@ local function buildFade(): Frame
 	return frame
 end
 
-function Hud.start(hop, skyCamera, landingMarker, vertigo)
+function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "SkyhopHud"
 	gui.ResetOnSpawn = false
@@ -290,6 +290,9 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 		viewButton.Activated:Connect(skyCamera.toggle)
 		local statsButton = newButton(gui, t("ButtonStats"), UDim2.fromOffset(96, 40), UDim2.new(1, -176, 0, 30))
 		statsButton.Activated:Connect(toggleStats)
+		local mapButton = newButton(gui, t("ButtonMap"), UDim2.fromOffset(96, 40), UDim2.new(1, -282, 0, 30))
+		mapButton.Name = "MapButton"
+		mapButton.Activated:Connect(skyMap.toggle)
 
 		local function placeTouch()
 			local camera = workspace.CurrentCamera
@@ -300,6 +303,7 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo)
 			stompButton.Position = if small then UDim2.new(1, -60, 1, -130) else UDim2.new(1, -110, 1, -270)
 			viewButton.Position = if portrait then UDim2.new(1, -58, 0, 140) else UDim2.new(1, -70, 0, 30)
 			statsButton.Position = if portrait then UDim2.new(1, -58, 0, 188) else UDim2.new(1, -176, 0, 30)
+			mapButton.Position = if portrait then UDim2.new(1, -58, 0, 92) else UDim2.new(1, -282, 0, 30)
 			statsPanel.Position = if portrait then UDim2.new(1, -12, 0, 236) else UDim2.new(1, -12, 0, 60)
 			statsPanel.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 172)
 			-- 좁은 화면에서는 긴 팝업("DING! ...")이 두 줄로 접힌다

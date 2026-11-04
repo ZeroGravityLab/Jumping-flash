@@ -53,6 +53,41 @@ function RequestLogic.nextFor(config, residentId: string, progress: Progress)
 	return improvable
 end
 
+-- 주민 상태 (말풍선·하늘 지도): "new" 안 끝낸 의뢰가 있다, "improve" 금메달이 아닌 의뢰만 남았다,
+-- "done" 모두 금메달, "locked" 남은 의뢰가 다른 의뢰를 먼저 끝내야 열린다
+function RequestLogic.residentState(config, residentId: string, progress: Progress): string
+	local request = RequestLogic.nextFor(config, residentId, progress)
+	if request then
+		return if progress[request.id] then "improve" else "new"
+	end
+	for _, r in config.Requests do
+		if r.resident == residentId and not progress[r.id] then
+			return "locked"
+		end
+	end
+	return "done"
+end
+
+-- 장의 의뢰 수: 끝낸 수, 전체 수
+function RequestLogic.chapterCount(config, chapter: number, progress: Progress): (number, number)
+	local done, total = 0, 0
+	for _, request in config.Requests do
+		if request.chapter == chapter then
+			total += 1
+			if progress[request.id] then
+				done += 1
+			end
+		end
+	end
+	return done, total
+end
+
+-- 장의 의뢰를 모두 끝냈는가 (0장 = 튜토리얼을 끝내면 하늘 지도가 열린다)
+function RequestLogic.chapterComplete(config, chapter: number, progress: Progress): boolean
+	local done, total = RequestLogic.chapterCount(config, chapter, progress)
+	return total > 0 and done == total
+end
+
 -- 서버 시계로 잰 시간이 말이 되는가
 function RequestLogic.isPlausible(request, seconds: number): boolean
 	return seconds >= request.minTime
