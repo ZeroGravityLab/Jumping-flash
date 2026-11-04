@@ -9,6 +9,7 @@ local LandingMarker = require(Movement:WaitForChild("LandingMarker"))
 local Effects = require(Movement:WaitForChild("Effects"))
 local Vertigo = require(Movement:WaitForChild("Vertigo"))
 local Ambience = require(Movement:WaitForChild("Ambience"))
+local Soundscape = require(Movement:WaitForChild("Soundscape"))
 local RequestController = require(Requests:WaitForChild("RequestController"))
 local Hud = require(UI:WaitForChild("Hud"))
 local RequestUi = require(UI:WaitForChild("RequestUi"))
@@ -33,6 +34,7 @@ SkyMap.start(HopController, RequestUi)
 Hud.start(HopController, SkyCamera, LandingMarker, Vertigo, SkyMap)
 Waypoints.start(HopController)
 RequestController.start(HopController, RequestUi, Waypoints)
+Soundscape.start(HopController, RequestController)
 task.spawn(ShopUi.start) -- 서버의 상점 Remote를 기다린다
 task.spawn(StarShards.start, HopController, RequestUi) -- 서버의 별조각 Remote를 기다린다
 task.spawn(Stories.start, HopController, RequestUi, SkyMap) -- 섬이 다 지어질 때까지 기다린다

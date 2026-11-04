@@ -26,6 +26,17 @@ place 파일(`build/Skyhop.rbxlx`)을 저장해야 유지된다. **`rojo build -
 | Sky/Birds | 130457575 | |
 | Sky/Cloud | 14343104543 | 인증 제작자. 구름 바다·구름 덩어리에 반복 사용 |
 
+## 음원 (place에 넣지 않고 Config `Audio`의 에셋 번호로 튼다)
+인증 제작자의 공식 라이선스 음원만 쓴다(APMOfficial, ProSoundEffects). 2026-11-04 Studio에서 모두 로드되는 것을 확인했다.
+
+| 용도 | 원본 ID | 이름 |
+|---|---|---|
+| 허브 음악 | 1842285620 | Pleasure Trip (APM) |
+| 풍차 초원 음악 | 1839885864 | Silly Things (APM) |
+| 클라우드 러시 음악 | 9043170481 | Dancing for Joy 60 A (APM) |
+| 장 보스 음악 | 9043602056 | Ghost Ship (a 60) (APM) |
+| 섬 새소리 | 9116969794 | Morning Birds 5 (Pro Sound Effects) |
+
 ## place에 저장되는 설정 (게임 스크립트로 못 바꿈)
 - `Terrain.Decoration` = 켬 (움직이는 잔디). 스크립트에서는 속성이 보이지도 않아 Studio 속성 창에서만 켤 수 있다. 2026-11-04 적용.
 - `Lighting.LightingStyle` = Realistic, `PrioritizeLightingQuality` = 끔 (저사양 기기에서 엔진이 품질을 낮출 수 있게). 예전 `Technology`(Future)를 대신하는 속성이다. 게임 스크립트는 쓸 수 없지만(PluginOrOpenCloud) Rojo 프로젝트에 적어 두었다. 2026-11-04 적용.
