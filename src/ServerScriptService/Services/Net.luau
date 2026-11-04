@@ -46,6 +46,14 @@ function Net.handleEvent(name: string, minInterval: number, handler: (Player, ..
 	end)
 end
 
+-- 서버가 보내기만 하는 이벤트 (클라이언트가 보내는 것은 받지 않는다)
+function Net.event(name: string): RemoteEvent
+	local remote = Instance.new("RemoteEvent")
+	remote.Name = name
+	remote.Parent = folder
+	return remote
+end
+
 function Net.forget(player: Player)
 	lastCall[player] = nil
 end

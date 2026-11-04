@@ -4,7 +4,9 @@ local process = require("@lune/process")
 local specs = {
 	MovementLogic = require("@self/MovementLogic.spec"),
 	RequestLogic = require("@self/RequestLogic.spec"),
+	RushLogic = require("@self/RushLogic.spec"),
 	Strings = require("@self/Strings.spec"),
+	TowerGen = require("@self/TowerGen.spec"),
 	ToyStats = require("@self/ToyStats.spec"),
 	WorldGen = require("@self/WorldGen.spec"),
 }

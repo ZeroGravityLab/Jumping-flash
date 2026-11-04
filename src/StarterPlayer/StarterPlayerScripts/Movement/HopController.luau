@@ -327,10 +327,21 @@ local function applyUpdraft()
 	end
 end
 
+-- 파트 윗면의 월드 높이. 구름 원판은 원기둥을 눕혀 놓아서 Size.Y가 지름이다 (Size.Y/2를 쓰면 구름에 설 수 없었다)
+local function topOf(part: BasePart): number
+	local cf, size = part.CFrame, part.Size
+	local halfHeight = (
+		math.abs(cf.XVector.Y) * size.X
+		+ math.abs(cf.YVector.Y) * size.Y
+		+ math.abs(cf.ZVector.Y) * size.Z
+	) / 2
+	return cf.Position.Y + halfHeight
+end
+
 -- 일방향 구름: 발이 윗면보다 아래면 통과. 로컬 충돌만 바꾸므로 다른 플레이어에게 영향이 없다
 local function updateClouds(feetY: number)
 	for _, cloud in cloudParts do
-		local top = cloud.Position.Y + cloud.Size.Y / 2
+		local top = topOf(cloud)
 		cloud.CanCollide = feetY >= top - Movement.CloudSnap
 	end
 end

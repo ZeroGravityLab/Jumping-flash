@@ -59,6 +59,20 @@ function RequestController.start(hop, ui)
 		updateMarkers(markers)
 	end
 
+	function RequestController.isActive(): boolean
+		return active ~= nil
+	end
+
+	-- 하던 의뢰를 그만둔다 (클라우드 러시로 탑에 올라갈 때)
+	function RequestController.cancelActive()
+		if active then
+			local id = active.request.id
+			stopActive()
+			cancelRemote:FireServer(id)
+		end
+		ui.hideDialog()
+	end
+
 	local function begin(request, islandId: string)
 		local ok = startRemote:InvokeServer(request.id)
 		if not ok then

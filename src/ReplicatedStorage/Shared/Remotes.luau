@@ -4,4 +4,6 @@ return table.freeze({
 	RequestStart = "RequestStart", -- RemoteFunction(requestId) -> ok
 	RequestComplete = "RequestComplete", -- RemoteFunction(requestId) -> 결과 표 또는 nil
 	RequestCancel = "RequestCancel", -- RemoteEvent(requestId)
+	RushJoin = "RushJoin", -- RemoteEvent(wantsToJoin: boolean). 다음 클라우드 러시 참가·취소
+	RushResult = "RushResult", -- 서버 → 클라이언트 RemoteEvent({ rank, total, height, coins, rang })
 })

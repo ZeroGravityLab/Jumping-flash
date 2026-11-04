@@ -190,6 +190,33 @@ function Features.BounceFlower(top: Vector3, spec, parent: Instance)
 	model.Parent = parent
 end
 
+-- 바운스 패드 (러시 탑): 공중에 뜬 노란 원판. 윗면이 top
+function Features.padAt(top: Vector3, parent: Instance)
+	local model = Instance.new("Model")
+	model.Name = "BouncePad"
+	local pad = part({
+		Name = "Pad",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(1.4, 12, 12),
+		CFrame = CFrame.new(top - Vector3.new(0, 0.7, 0)) * UPRIGHT,
+		Color = COLOR.Cap,
+		Parent = model,
+	})
+	CollectionService:AddTag(pad, Tags.BouncePad)
+	for i = 1, 8 do
+		local angle = i / 8 * math.pi * 2
+		decorative(part({
+			Name = "Petal",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(3.4, 2.4, 3.4),
+			CFrame = CFrame.new(top + Vector3.new(math.cos(angle) * 6.4, -1.2, math.sin(angle) * 6.4)),
+			Color = COLOR.Petal,
+			Parent = model,
+		}))
+	end
+	model.Parent = parent
+end
+
 -- 퍼플링: 밟으면 튀어 오르는 구름 덩어리 생물 (충돌 없음, 밟기는 레이캐스트로 판정)
 local function puffling(position: Vector3, parent: Instance)
 	local model = Instance.new("Model")
@@ -226,6 +253,8 @@ local function puffling(position: Vector3, parent: Instance)
 	model.Parent = parent
 	return body
 end
+
+Features.puffling = puffling
 
 -- 퍼플링 줄: heights는 지면 기준 높이, step은 한 마리 사이 수평 간격
 function Features.Pufflings(top: Vector3, spec, parent: Instance)
@@ -264,6 +293,8 @@ local function cloudPlatform(center: Vector3, diameter: number, parent: Instance
 	model.Parent = parent
 end
 
+Features.cloudPlatform = cloudPlatform
+
 function Features.CloudSteps(top: Vector3, spec, parent: Instance)
 	local base = groundOrTop(top, spec.x, spec.z)
 	for i = 1, spec.count do
@@ -275,13 +306,12 @@ function Features.CloudSteps(top: Vector3, spec, parent: Instance)
 	end
 end
 
--- 상승 기류: 보이지 않는 기둥(Updraft 태그) + 위로 흐르는 바람 입자
-function Features.Updraft(top: Vector3, spec, parent: Instance)
-	local base = groundOrTop(top, spec.x, spec.z)
+-- 상승 기류: 보이지 않는 기둥(Updraft 태그) + 위로 흐르는 바람 입자. 밑면이 base
+function Features.updraftAt(base: Vector3, height: number, parent: Instance)
 	local column = part({
 		Name = "Updraft",
-		Size = Vector3.new(18, spec.height, 18),
-		CFrame = CFrame.new(base + Vector3.new(0, spec.height / 2, 0)),
+		Size = Vector3.new(18, height, 18),
+		CFrame = CFrame.new(base + Vector3.new(0, height / 2, 0)),
 		Transparency = 1,
 		Parent = parent,
 	})
@@ -304,6 +334,10 @@ function Features.Updraft(top: Vector3, spec, parent: Instance)
 	wind.LightEmission = 0.4
 	wind.Color = ColorSequence.new(Color3.fromRGB(235, 248, 255))
 	wind.Parent = column
+end
+
+function Features.Updraft(top: Vector3, spec, parent: Instance)
+	Features.updraftAt(groundOrTop(top, spec.x, spec.z), spec.height, parent)
 end
 
 return Features

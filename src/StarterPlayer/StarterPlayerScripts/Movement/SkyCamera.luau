@@ -68,6 +68,19 @@ local function setCharacterHidden(character: Model, hidden: boolean)
 	end
 end
 
+-- 카메라가 캐릭터 뒤에서 target 쪽을 보게 돌린다 (러시 출발처럼 순간이동한 뒤)
+function SkyCamera.faceToward(target: Vector3)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local d = target - root.Position
+	if Vector3.new(d.X, 0, d.Z).Magnitude > 1e-3 then
+		yaw = math.atan2(-d.X, -d.Z)
+	end
+end
+
 function SkyCamera.toggle()
 	SkyCamera.mode = if SkyCamera.mode == "Sky" then "First" else "Sky"
 	local character = player.Character
