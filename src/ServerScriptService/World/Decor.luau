@@ -174,10 +174,42 @@ function Decor.steppingStone(spec: { number }, index: number, parent: Instance):
 	return Decor.place(template, Vector3.new(spec[1], spec[2] - height, spec[3]), index * 47, scale, parent)
 end
 
--- 열기구와 새 떼: 위치만 정하고 움직임은 클라이언트(Ambience)가 맡는다
+-- 열기구와 갈매기 떼: 위치만 정하고 움직임은 클라이언트(Ambience)가 맡는다
+local GULLS_PER_FLOCK = 6
+local GULL_SPACING = 7 -- 템플릿 날개폭(약 4.4)의 배율 1 기준 V자 간격
+
+-- 갈매기 떼: Assets/Sky/Gull(날개 뼈대 WingL1·L2·R1·R2가 있는 스킨 메시, ASSETS.md)을 느슨한 V자로 세운다 (앞이 -Z).
+-- 날갯짓·활공·흔들림·기울기는 클라이언트 Ambience가 뼈대와 기준점으로 매 프레임 정한다
+local function gullFlock(template: Model, center: Vector3, scale: number, rng, parent: Instance): Model
+	local flock = Instance.new("Model")
+	flock.Name = "Gulls"
+	flock:SetAttribute("Flock", true)
+	for i = 1, GULLS_PER_FLOCK do
+		local rank = i // 2
+		local side = if i % 2 == 0 then -1 else 1
+		local offset = if i == 1
+			then Vector3.zero
+			else Vector3.new(
+				side * rank * GULL_SPACING + rng:range(-1.5, 1.5),
+				rng:range(-2, 2),
+				rank * GULL_SPACING * 0.8 + rng:range(-1.5, 1.5)
+			) * scale
+		local bird = template:Clone()
+		bird:ScaleTo(bird:GetScale() * scale)
+		bird:PivotTo(CFrame.new(center + offset))
+		bird:SetAttribute("Offset", offset)
+		bird:SetAttribute("Phase", rng:range(0, math.pi * 2))
+		bird:SetAttribute("Scale", scale)
+		bird.Parent = flock
+	end
+	flock.WorldPivot = CFrame.new(center)
+	flock.Parent = parent
+	return flock
+end
+
 function Decor.skyLife(config, parent: Instance)
 	local balloon = Decor.template("Sky", "Balloon")
-	local birds = Decor.template("Sky", "Birds")
+	local gullTemplate = Decor.template("Sky", "Gull")
 
 	local rng = WorldGen.rng(config.Balloons.seed)
 	for _ = 1, config.Balloons.count do
@@ -199,9 +231,6 @@ function Decor.skyLife(config, parent: Instance)
 
 	rng = WorldGen.rng(config.BirdFlocks.seed)
 	for _ = 1, config.BirdFlocks.count do
-		if not birds then
-			break
-		end
 		local angle = rng:range(0, math.pi * 2)
 		local dist = rng:range(config.BirdFlocks.minDistance, config.BirdFlocks.maxDistance)
 		local center = Vector3.new(
@@ -209,8 +238,10 @@ function Decor.skyLife(config, parent: Instance)
 			rng:range(config.BirdFlocks.minY, config.BirdFlocks.maxY),
 			math.sin(angle) * dist
 		)
-		local model = Decor.place(birds, center, 0, rng:range(1.4, 2.2), parent)
-		setPassThrough(model)
+		if not gullTemplate then
+			break
+		end
+		local model = gullFlock(gullTemplate, center, rng:range(1.6, 2.4), rng, parent)
 		model:SetAttribute("OrbitCenter", center)
 		model:SetAttribute("OrbitRadius", rng:range(40, 110))
 		model:SetAttribute("OrbitSpeed", rng:range(0.08, 0.16) * (if rng:next() < 0.5 then -1 else 1))

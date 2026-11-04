@@ -23,7 +23,8 @@ place 파일(`build/Skyhop.rbxlx`)을 저장해야 유지된다. **`rojo build -
 | Buildings/House_Village | 15485395576 | |
 | Buildings/Windmill | 15675216202 | 원본 Script·Sound 삭제. Fan을 클라이언트가 돌림 |
 | Sky/Balloon | 166871533 | |
-| Sky/Birds | 130457575 | |
+| Sky/Birds | 130457575 | **쓰지 않음** (2026-11-04). 새 한 마리가 날개 없는 메시라 날갯짓을 못 하고 떼 전체가 미끄러지듯 움직였다 |
+| Sky/Gull | 10686422380 ("Animated seagulls", mrtrolldos) | 스킨 메시 갈매기 1마리만 뽑음(원본은 4마리). 원본 Script 2개 삭제, 원본 애니메이션은 쓰지 않는다. 날개 뼈 WingL1·L2·R1·R2를 클라이언트 Ambience가 직접 굽혀 날갯짓시킨다. **예외**: 스킨이 뼈를 따라가려면 몸통 MeshPart를 RootPart(뼈가 든 Anchored 파트)에 Motor6D로 이어 두어야 한다. 기준점은 몸통 가운데, 앞이 -Z |
 | Sky/Cloud | 14343104543 | 인증 제작자. 구름 바다·구름 덩어리에 반복 사용 |
 
 ## 음원 (place에 넣지 않고 Config `Audio`의 에셋 번호로 튼다)
