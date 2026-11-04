@@ -161,7 +161,8 @@ local function layout()
 
 	result.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 170)
 	storyCard.Size = UDim2.fromOffset(math.min(540, viewport.X - 24), if viewport.X < 520 then 330 else 290)
-	toastLabel.Position = UDim2.new(0.5, 0, 0, if touch and portrait then 214 else 120)
+	-- 허브에서는 러시 대기 띠(위 116, 높이 50~64)가 늘 떠 있고 그 바로 밑에 Hud의 퍼펙트 팝업이 뜬다. 그 아래에 띄운다
+	toastLabel.Position = UDim2.new(0.5, 0, 0, if touch and portrait then 310 else 250)
 	toastLabel.Size = UDim2.fromOffset(math.min(600, viewport.X - 24), 56)
 	toastLabel.TextSize = if viewport.X < 600 then 20 else 24
 end

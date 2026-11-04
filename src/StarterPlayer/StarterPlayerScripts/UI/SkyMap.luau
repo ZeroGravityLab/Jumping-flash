@@ -58,6 +58,7 @@ local unlocked = false
 local loaded = false
 local guideBeam: BasePart? = nil
 local guideTarget: string? = nil
+local guidePosition: Vector3? = nil
 local toMap: ((x: number, z: number) -> Vector2)? = nil
 
 local function t(key: string, ...: any): string
@@ -214,19 +215,14 @@ local function clearGuide()
 		guideBeam = nil
 	end
 	guideTarget = nil
+	guidePosition = nil
 end
 
 function SkyMap.close()
 	gui.Enabled = false
 end
 
--- 그 주민(또는 보스 받침대) 위로 빛기둥을 세운다 (이 플레이어에게만 보인다)
-function SkyMap.guide(residentId: string)
-	clearGuide()
-	local position = targetPosition(residentId)
-	if not position then
-		return
-	end
+local function placeBeam(position: Vector3)
 	local beam = Instance.new("Part")
 	beam.Name = "GuideBeam"
 	beam.Shape = Enum.PartType.Cylinder
@@ -242,9 +238,27 @@ function SkyMap.guide(residentId: string)
 	beam.CFrame = CFrame.new(position + Vector3.new(0, GUIDE_HEIGHT / 2, 0)) * CFrame.Angles(0, 0, math.rad(90))
 	beam.Parent = hop.localFolder
 	guideBeam = beam
-	guideTarget = residentId
 	SkyMap.close()
+end
+
+-- 그 주민(또는 보스 받침대) 위로 빛기둥을 세운다 (이 플레이어에게만 보인다)
+function SkyMap.guide(residentId: string)
+	clearGuide()
+	local position = targetPosition(residentId)
+	if not position then
+		return
+	end
+	placeBeam(position)
+	guideTarget = residentId
 	ui.toast(t("MapGuiding", displayName(residentId)))
+end
+
+-- 주민이 아닌 장소(이야기 끝에 생긴 등대 등)로 안내한다
+function SkyMap.guideAt(position: Vector3, name: string)
+	clearGuide()
+	placeBeam(position)
+	guidePosition = position
+	ui.toast(t("MapGuidingPlace", name))
 end
 
 -- 보스 핀을 골랐을 때: 열렸으면 의뢰처럼, 아직이면 종 게이지가 얼마나 남았는지
@@ -673,8 +687,8 @@ function SkyMap.start(hopController, requestUi)
 
 	RunService.RenderStepped:Connect(function()
 		local root = hop.rootPart()
-		if guideTarget and root then
-			local target = targetPosition(guideTarget)
+		if (guideTarget or guidePosition) and root then
+			local target = if guideTarget then targetPosition(guideTarget) else guidePosition
 			if target and (root.Position - target).Magnitude <= GUIDE_CLEAR_DISTANCE then
 				clearGuide()
 			end

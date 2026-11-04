@@ -1,4 +1,5 @@
 -- 착지 예상 지점 링과 발밑 그림자 (GDD 5.4). 클라이언트 전용이라 복제되지 않는다.
+-- 그림자는 공중에 있는 동안 늘 그리고, 링만 켜고 끈다 (L)
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -86,7 +87,7 @@ function LandingMarker.start(hop)
 
 	RunService.RenderStepped:Connect(function()
 		local root = hop.rootPart()
-		if not (LandingMarker.enabled and root and not hop.isGrounded()) then
+		if not (root and not hop.isGrounded()) then
 			marker.Transparency = 1
 			shadow.Transparency = 1
 			return
@@ -95,7 +96,7 @@ function LandingMarker.start(hop)
 		params.FilterDescendantsInstances = { hop.character(), hop.localFolder }
 		local feet = hop.feetPosition()
 
-		local landing = predictLanding(feet, root.AssemblyLinearVelocity, params)
+		local landing = LandingMarker.enabled and predictLanding(feet, root.AssemblyLinearVelocity, params)
 		if landing then
 			marker.Transparency = MARKER_TRANSPARENCY
 			marker.Color = colorFor(landing.Instance)

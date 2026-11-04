@@ -60,6 +60,7 @@ export type Callbacks = {
 	success: () -> (),
 	fail: (reasonKey: string) -> (),
 	notice: (key: string) -> (), -- 실패는 아니지만 알려 줄 일
+	targets: ((positions: { Vector3 }) -> ())?, -- 아직 남은 목표 위치 (목표 표시, UI/Waypoints). 끝나면 빈 목록
 }
 
 local function islandSpec(id: string)
@@ -574,6 +575,22 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 	local connections = {}
 	local finished = false
 
+	local function targets(positions: { Vector3 })
+		if callbacks.targets then
+			callbacks.targets(positions)
+		end
+	end
+	-- entries 중 doneKey가 아직 거짓인 것의 위치
+	local function leftOver(entries: { any }, key: string, doneKey: string): { Vector3 }
+		local list = {}
+		for _, entry in entries do
+			if not entry[doneKey] then
+				table.insert(list, entry[key])
+			end
+		end
+		return list
+	end
+
 	local function cleanup()
 		finished = true
 		for _, c in connections do
@@ -581,6 +598,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 		end
 		folder:Destroy()
 		solid:Destroy()
+		targets({})
 	end
 	local function finish(ok: boolean, reason: string?)
 		if finished then
@@ -611,6 +629,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 		end
 		local total, done = #items, 0
 		callbacks.progress(0, total)
+		targets(leftOver(items, "position", "done"))
 		table.insert(
 			connections,
 			RunService.Heartbeat:Connect(function()
@@ -632,6 +651,8 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 							callbacks.progress(done, total)
 							if done == total then
 								finish(true)
+							else
+								targets(leftOver(items, "position", "done"))
 							end
 						end
 					end
@@ -648,6 +669,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 		end
 		local total, done = #beacons, 0
 		callbacks.progress(0, total)
+		targets(leftOver(beacons, "position", "lit"))
 		-- 스톰프로 내려앉아야 켜진다
 		table.insert(
 			connections,
@@ -668,6 +690,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 						light.Parent = b.flame
 						done += 1
 						callbacks.progress(done, total)
+						targets(leftOver(beacons, "position", "lit"))
 						if done == total then
 							task.delay(0.4, finish, true)
 						end
@@ -686,6 +709,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 		local total, nextIndex = #rings, 1
 		paint(rings[1].parts, COLOR.RingNext)
 		callbacks.progress(0, total)
+		targets({ rings[1].center }) -- 고리는 다음 것만 가리킨다
 		local previous: Vector3? = nil
 		table.insert(
 			connections,
@@ -710,6 +734,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 							return
 						end
 						paint(rings[nextIndex].parts, COLOR.RingNext)
+						targets({ rings[nextIndex].center })
 					elseif nextIndex > 1 then
 						finish(false, "FailMissed")
 						return
@@ -756,6 +781,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 			Transparency = 0.75,
 		}):Play()
 		callbacks.progress(0, 1)
+		targets({ target })
 		table.insert(
 			connections,
 			RunService.Heartbeat:Connect(function()
@@ -797,6 +823,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 		end
 		local total, done = #blobs, 0
 		callbacks.progress(0, total)
+		targets(leftOver(blobs, "position", "popped"))
 		-- 둥실거리며 카메라 쪽을 바라본다
 		table.insert(
 			connections,
@@ -826,6 +853,8 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 						callbacks.progress(done, total)
 						if done == total then
 							finish(true)
+						else
+							targets(leftOver(blobs, "position", "popped"))
 						end
 						return
 					end
@@ -847,6 +876,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 				end
 				done = 0
 				callbacks.progress(0, total)
+				targets(leftOver(blobs, "position", "popped"))
 				callbacks.notice("MurkRegrow")
 			end)
 		)
@@ -879,6 +909,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 			Parent = folder,
 		})
 		paint(ring(goal + Vector3.new(0, 1, 0), folder), COLOR.Finish)
+		targets({ goal })
 		local flyer = kite(folder)
 		local startedAt = os.clock()
 		local shown = -1
@@ -984,6 +1015,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 		end
 		local total, done = #rods, 0
 		callbacks.progress(0, total)
+		targets(leftOver(rods, "top", "spent"))
 
 		-- 피뢰침 발판에 스톰프로 내려앉으면 그 피뢰침이 꺼진다
 		table.insert(
@@ -1005,6 +1037,7 @@ function Objectives.run(request, islandId: string, hop, callbacks: Callbacks): (
 						thunder(0.8, 0.5)
 						done += 1
 						callbacks.progress(done, total)
+						targets(leftOver(rods, "top", "spent"))
 						if done == total then
 							Objectives.dispelStorm(body)
 							thunder(0.45, 0.8)

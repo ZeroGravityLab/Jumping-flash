@@ -15,8 +15,9 @@ return {
 	},
 
 	-- 주민 이야기 (GDD 6.6): final 의뢰를 처음 끝내면 엔딩 카드가 뜨고 허브가 바뀐다 (그 플레이어에게만).
-	-- 바뀐 모습은 클라이언트 Requests/Stories의 같은 id 빌더가 만들고, 카드를 닫으면 showAt 주민에게 길 안내한다.
-	-- spots는 island 중심 기준 {x, z}이고, 월드 생성 때 그 주변에 나무를 심지 않는다
+	-- 바뀐 모습은 클라이언트 Requests/Stories의 같은 id 빌더가 만들고, 카드를 닫으면 showAt 주민에게,
+	-- 또는 showSpot 자리(이름은 Strings StoryPlace_<id>)로 길 안내한다.
+	-- spots는 island 중심 기준 {x, z, 반경?}이고, 월드 생성 때 그 반경(없으면 8) 안에 나무를 심지 않는다
 	Stories = {
 		{
 			id = "Bakery",
@@ -26,6 +27,24 @@ return {
 			island = "Skyhaven",
 			spots = { stall = { -30, 24 }, bun = { -22, 44 } },
 			house = { -66, 46 }, -- 모모 뒤 집: 굴뚝 연기와 지붕 위 통통 빵
+		},
+		-- 레아: 허브 가장자리 등대에 불이 켜지고 구름배가 섬 둘레를 돈다. 꼭대기 전망대에 설 수 있다
+		{
+			id = "Lighthouse",
+			resident = "Rhea",
+			final = "c1_dive",
+			showSpot = "tower",
+			island = "Skyhaven",
+			spots = { tower = { -108, -84, 18 } },
+		},
+		-- 렌: 허브 하늘에 연 계단(일방향 발판). 꼭대기 큰 연은 바운스 패드
+		{
+			id = "Kites",
+			resident = "Wren",
+			final = "c1_summit_race",
+			showSpot = "hill",
+			island = "Skyhaven",
+			spots = { hill = { 44, -100, 34 } },
 		},
 		-- 1장 보스를 이기면 풍차 초원이 되살아난다 (먹구름이 걷히고 무지개)
 		{ id = "Chapter1", final = "c1_boss", island = "WindmillMeadow", spots = {} },

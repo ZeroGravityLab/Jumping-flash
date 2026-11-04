@@ -213,6 +213,7 @@ return {
 			check.truthy(final ~= nil, story.id .. " final request missing")
 			check.equal(final and final.resident, story.resident)
 			check.truthy(story.showAt == nil or residents[story.showAt], story.id .. " showAt unknown")
+			check.truthy(story.showSpot == nil or story.spots[story.showSpot], story.id .. " showSpot unknown")
 			local island = islands[story.island]
 			check.truthy(island ~= nil, story.id .. " unknown island")
 			for name, spot in story.spots do
@@ -224,6 +225,9 @@ return {
 			for code, texts in Strings.languages do
 				for _, suffix in { "_Title", "_Line", "_Change" } do
 					check.truthy(texts["Story_" .. story.id .. suffix] ~= nil, code .. " missing story text")
+				end
+				if story.showSpot then
+					check.truthy(texts["StoryPlace_" .. story.id] ~= nil, code .. " missing story place name")
 				end
 			end
 		end

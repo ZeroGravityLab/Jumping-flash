@@ -18,6 +18,7 @@ local WorldBuilder = {}
 
 local TERRAIN_SETTLE_TIMEOUT = 5
 local REQUEST_SPOT_RADIUS = 8 -- 랜턴 스톰프 판정 반경과 같다
+local RESIDENT_CLEAR_RADIUS = 10 -- 꽃 무더기가 ±4로 퍼지고 바위가 커서 넉넉히 비운다
 
 local function vec(a: { number }): Vector3
 	return Vector3.new(a[1], a[2], a[3])
@@ -61,7 +62,7 @@ local function requestSpots(islandId: string): ({ any }, { [number]: boolean })
 	for _, story in Requests.Stories do
 		if story.island == islandId then
 			for _, spot in story.spots do
-				table.insert(surface, { x = spot[1], z = spot[2] })
+				table.insert(surface, { x = spot[1], z = spot[2], r = spot[3] })
 			end
 		end
 	end
@@ -82,9 +83,15 @@ local function exclusionsFor(island, spots: { any }): { any }
 	for _, f in island.features or {} do
 		table.insert(list, { x = f.x, z = f.z, r = 14 })
 	end
+	-- 주민 둘레: 바위·꽃이 얼굴을 가리지 않고 위에서도 보이게
+	for _, resident in Requests.Residents do
+		if resident.island == island.id then
+			table.insert(list, { x = resident.x, z = resident.z, r = RESIDENT_CLEAR_RADIUS, sky = true })
+		end
+	end
 	-- 의뢰 지점(랜턴·배달지 등)은 나무 잎이 덮지 않게 한다
 	for _, spot in spots do
-		table.insert(list, { x = spot.x, z = spot.z, r = REQUEST_SPOT_RADIUS, sky = true })
+		table.insert(list, { x = spot.x, z = spot.z, r = spot.r or REQUEST_SPOT_RADIUS, sky = true })
 	end
 	return list
 end

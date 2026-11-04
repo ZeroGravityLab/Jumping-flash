@@ -186,6 +186,22 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
 	local popupStroke = popup:FindFirstChildOfClass("UIStroke")
 	popupStroke.Transparency = 1
 
+	-- 허브에서 늘 떠 있는 러시 대기 띠(RushHud: 위 116, 높이 50, 세로 터치는 64)와 겹치지 않게 그 아래에 둔다.
+	-- 좁은 화면에서는 긴 팝업("DING! ...")이 두 줄로 접힌다
+	local function placePopup()
+		local camera = workspace.CurrentCamera
+		local viewport = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+		local height = if viewport.X < 500 then 110 else 64
+		local narrowTouch = UserInputService.TouchEnabled and viewport.Y > viewport.X
+		local bannerBottom = if narrowTouch then 180 else 166 -- 두 화면 모두 IgnoreGuiInset = false라 같은 기준이다
+		popup.Size = UDim2.fromOffset(math.min(480, viewport.X - 16), height)
+		popup.Position = UDim2.new(0.5, 0, 0, math.max(viewport.Y * 0.3, bannerBottom + 10 + height / 2))
+	end
+	placePopup()
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placePopup)
+	end
+
 	local function showPopup(text: string, color: Color3, scale: number?)
 		local size = scale or 1
 		popup.Text = text
@@ -306,8 +322,6 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
 			mapButton.Position = if portrait then UDim2.new(1, -58, 0, 92) else UDim2.new(1, -282, 0, 30)
 			statsPanel.Position = if portrait then UDim2.new(1, -12, 0, 236) else UDim2.new(1, -12, 0, 60)
 			statsPanel.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 172)
-			-- 좁은 화면에서는 긴 팝업("DING! ...")이 두 줄로 접힌다
-			popup.Size = UDim2.fromOffset(math.min(480, viewport.X - 16), if viewport.X < 500 then 110 else 64)
 		end
 		placeTouch()
 		if workspace.CurrentCamera then

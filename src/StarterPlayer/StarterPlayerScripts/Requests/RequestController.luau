@@ -42,7 +42,7 @@ local function updateMarkers(markers: { [string]: BillboardGui })
 	end
 end
 
-function RequestController.start(hop, ui)
+function RequestController.start(hop, ui, waypoints)
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local startRemote = remotes:WaitForChild(Remotes.RequestStart) :: RemoteFunction
 	local completeRemote = remotes:WaitForChild(Remotes.RequestComplete) :: RemoteFunction
@@ -105,6 +105,7 @@ function RequestController.start(hop, ui)
 			notice = function(key)
 				ui.toast(ui.text(key))
 			end,
+			targets = waypoints.set,
 		})
 		active = { request = request, startedAt = os.clock(), cleanup = cleanup }
 		updateMarkers(markers)

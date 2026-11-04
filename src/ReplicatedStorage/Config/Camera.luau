@@ -29,7 +29,7 @@ return {
 	ZoomMax = 40,
 	ZoomStep = 2,
 
-	MarkerEnabled = true,
+	MarkerEnabled = false, -- 기본은 그림자만 (사용자 요청 2026-11-04: 그림자가 보여서 파란 링은 없어도 된다). L로 켠다
 	MarkerPredictSeconds = 4,
 	MarkerStep = 0.05,
 
