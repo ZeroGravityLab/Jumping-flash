@@ -33,6 +33,7 @@ return {
 			features = {
 				{ type = "Bell", x = 0, z = 0 },
 				{ type = "MapTable", x = 14, z = 8 }, -- 스폰(0, 22) 앞. 하늘 지도를 연다
+				{ type = "ShopStall", x = -16, z = 8, face = { 0, 22 } }, -- 지도 탁자 맞은편, 스폰을 본다. 코인 상점
 				{ type = "BounceFlower", x = 34, z = 74 },
 				{ type = "BounceFlower", x = -96, z = -14 },
 				{ type = "Pufflings", x = -54, z = 104, heights = { 9, 14, 19 }, step = 16 },

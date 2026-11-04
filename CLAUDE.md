@@ -6,10 +6,10 @@ Roblox 수직 하이점프 3D 플랫포머 (글로벌 출시, 기본 영어). 1�
 ## 현재 단계
 
 - **W3 진행 중** (2026-11-04, 사용자 요청 "계속 개발 진행해줘"). W2(떠 있는 섬 월드, 아찔함 연출, 의뢰 시스템, 모바일 UI 배치, ProfileStore 저장, 연속 퍼펙트 연출)는 끝났다. W3 순서: ① 1장 의뢰 10개·유형 6종 (완료: 주민 렌 + 경주 유형) → ② 하늘 지도 (완료: UI/SkyMap, 허브 지도 탁자, 길 안내 빛기둥) → ③ 주민 이야기 끝 연출 (완료: 브람 → 허브 빵집, Requests/Stories, Config Requests.Stories) → ④ 클라우드 러시(해일·종·라이벌 밟기·청크 15개). ④는 1·2단계 완료(탑·해일·종·결과, 라이벌 밟기, MovementGuard — GDD 7.2·14.2). W3 코드 항목은 모두 끝났다. 남은 것: 2인 이상 러시 실제 테스트(밟기 장면 미확인), W3 완료 기준인 지인 3~5명 테스트. 아이콘은 아트 작업이라 코드 범위 밖.
-- **완성도 작업 중** (2026-11-04, 사용자 요청 "테스트는 미루고 컨텐츠·볼륨·재미·모델링 등 완성도를 높여줘"). 순서: ① 1장 보스 썬더헤드 + 섬 복구 (완료·Studio 확인: Requests/Boss, Objectives Boss 유형, Stories Chapter1 무지개, 하늘 지도 보스 핀·복구 표시 — GDD 6.3) → ② 주민 외형 모델링 + 레아·렌 이야기 끝 (완료·Studio 확인: World/ResidentLooks, Requests/Greeting, Stories Lighthouse·Kites — GDD 6.6. 연 계단·큰 연 바운스·전망대는 수치로, 외형·손 흔들기·카드·길 안내는 화면으로 확인) → ③ 코인 상점(코스메틱, 코인만) → ④ 숨은 수집품·러시 청크 추가 → ⑤ 배경음악·환경음. 부츠·데일리 어센트·2장은 여전히 요청 전에 만들지 않는다.
+- **완성도 작업 중** (2026-11-04, 사용자 요청 "테스트는 미루고 컨텐츠·볼륨·재미·모델링 등 완성도를 높여줘"). 순서: ① 1장 보스 썬더헤드 + 섬 복구 (완료·Studio 확인: Requests/Boss, Objectives Boss 유형, Stories Chapter1 무지개, 하늘 지도 보스 핀·복구 표시 — GDD 6.3) → ② 주민 외형 모델링 + 레아·렌 이야기 끝 (완료·Studio 확인: World/ResidentLooks, Requests/Greeting, Stories Lighthouse·Kites — GDD 6.6. 연 계단·큰 연 바운스·전망대는 수치로, 외형·손 흔들기·카드·길 안내는 화면으로 확인) → ③ 코인 상점(코스메틱, 코인만. 완료·Studio 확인: 구매/장착/벗기/코인 부족/재생성, 상점 화면·부츠·궤적 모습. Config Shop, ShopService, CosmeticService, UI/ShopUi — GDD 9.4. 휴대폰 화면은 미확인) → ④ 숨은 수집품·러시 청크 추가 → ⑤ 배경음악·환경음. 부츠·데일리 어센트·2장은 여전히 요청 전에 만들지 않는다.
 - 보스 테스트: 서버가 종 게이지(1장 의뢰 6개)를 확인하므로 의뢰 6개를 실제로 끝내야 도전할 수 있다. 빠른 순서: 레아 배달 → 브람 빨래(4초 간격, minTime 25) → 브람 머크 → 렌 리본(4초 간격) → 렌 연 경주(5초 뒤 결승점으로) → 렌 연줄 머크. 피뢰침은 발판 위 공중으로 옮긴 뒤 LeftShift(스톰프). Studio 창이 최소화되거나 다른 창(Studio 시작 화면 포함)에 가려지면 화면이 하얗게 나오고 프롬프트가 뜨지 않는다. 플레이 중 원하는 각도로 찍으려면 SkyCamera가 카메라를 덮어쓰므로 Client에서 `BindToRenderStep`(우선순위 Last+10)으로 카메라를 고정한 뒤 `screen_capture`한다.
 - 러시 테스트: 대기 20초 동안 띠의 참가 버튼을 누른다(MCP 실행 스레드는 Remote를 못 쏜다). 클라이언트에서 루트를 Anchored로 고정하면 서버가 떨어진 것으로 보고 탈락시키므로, 실제 발판 위에 세워서 본다. 러시 중 300보다 높이 순간이동하면 MovementGuard가 되돌린다(출력 창 `[MovementGuard]`) — 테스트에서 높은 곳을 볼 때는 낮은 발판부터 차례로 옮기거나 경고를 감안한다.
-- place가 게시 전이라 Studio에서는 ProfileStore가 메모리 저장소로 돈다(실제 저장 확인은 게시하고 API 접근을 켠 뒤). 플레이를 다시 시작하면 의뢰 진행이 비므로, 선행 의뢰가 있는 의뢰는 앞 의뢰부터 다시 끝내고 확인한다. UI만 볼 때는 Client `execute_luau`로 `RequestProgress` 속성을 이 클라이언트에서만 바꿔 써도 된다(서버 데이터는 그대로). 이야기 끝 연출도 이렇게 띄운다(예: `c1_dive`를 넣으면 등대, `c1_summit_race`면 연 축제).
+- place가 게시 전이라 Studio에서는 ProfileStore가 메모리 저장소로 돈다(실제 저장 확인은 게시하고 API 접근을 켠 뒤). 플레이를 다시 시작하면 의뢰 진행이 비므로, 선행 의뢰가 있는 의뢰는 앞 의뢰부터 다시 끝내고 확인한다. UI만 볼 때는 Client `execute_luau`로 `RequestProgress` 속성을 이 클라이언트에서만 바꿔 써도 된다(서버 데이터는 그대로). 이야기 끝 연출도 이렇게 띄운다(예: `c1_dive`를 넣으면 등대, `c1_summit_race`면 연 축제). 상점 테스트 코인은 Server `execute_luau`로 플레이어에 `StudioGrantCoins` 속성(숫자)을 쓰면 EconomyService가 준다(Studio에서만 연결된다).
 - 모바일 점검은 Studio Test → Device Simulator로 한다. 플레이를 다시 시작하면 가로로 돌아가고, 프롬프트는 카메라 화면 안에 있어야 뜬다.
 - 개발자 본인 손맛 테스트는 2026-11-04 통과("손맛 좋다"). 테스터 5명 기준 토이 게이트(GDD 15장)는 아직 남아 있다. W4 이후 기능(데일리 어센트, 리그, 부츠 등)은 요청 전에 만들지 않는다. 단계가 바뀌면 이 섹션을 갱신한다.
 - 외부 에셋은 [ASSETS.md](ASSETS.md)의 규칙(정화·배율·place 저장)을 따른다.
@@ -47,9 +47,9 @@ rokit.toml                    도구 버전 고정 (rojo, lune, stylua, selene)
 src/
   ReplicatedStorage/
     Config/                   Movement, Camera, World(섬 배치), Requests(주민·의뢰), Rush(러시 라운드·해일·보상),
-                              Chunks(러시 청크 15종 발판 데이터) — 순수 데이터 테이블만
+                              Chunks(러시 청크 15종 발판 데이터), Shop(코인 상점 상품) — 순수 데이터 테이블만
     Shared/                   MovementLogic, WorldGen, RequestLogic, ToyStats, TowerGen(시드→탑·도달 가능성 린트),
-                              RushLogic(해일·순위·코인·밟기 판정), GuardLogic(MovementGuard 규칙) (순수 함수),
+                              RushLogic(해일·순위·코인·밟기 판정), GuardLogic(MovementGuard 규칙), ShopLogic(구매·장착 규칙) (순수 함수),
                               Strings, Tags, Signal, Remotes(이름만, 인스턴스는 Services/Net이 만든다)
   ServerScriptService/
     Main.server.luau          부트스트랩: 서비스 시작 → 월드 생성 → 캐릭터 생성 허용
@@ -57,7 +57,7 @@ src/
                               Clouds, Sky(조명·대기), Residents(주민 NPC·대기 동작), ResidentLooks(주민 소품),
                               TowerBuilder(러시 탑)
     Services/                 Net(Remote·빈도 제한), DataService(ProfileStore), EconomyService, RequestService,
-                              RoundService(클라우드 러시 라운드)
+                              RoundService(클라우드 러시 라운드), ShopService(상점 구매·장착), CosmeticService(궤적·부츠 입히기)
     Packages/                 외부 라이브러리 원본 (ProfileStore). 고치지 않는다, selene·stylua 제외
   StarterPlayer/StarterPlayerScripts/
     Main.client.luau          클라이언트 부트스트랩
@@ -65,7 +65,7 @@ src/
     Requests/                 RequestController(대화·서버 확인), Objectives(유형별 목표·보스 싸움), Stories(이야기 끝·허브 변화·섬 복구),
                               Boss(정상 위 먹구름·도전 받침대), Greeting(다가가면 주민이 손 흔들기)
     UI/                       Hud, RequestUi, SkyMap(하늘 지도), RushHud(러시 띠·해일·결과),
-                              Waypoints(의뢰 목표 아이콘·거리·화면 밖 화살표)
+                              Waypoints(의뢰 목표 아이콘·거리·화면 밖 화살표), ShopUi(코인 상점)
 ServerStorage.Assets          무료 에셋. Rojo 밖, place 파일에만 있다 (ASSETS.md)
 third_party/                  외부 라이브러리의 출처·커밋·라이선스
 tests/
@@ -96,7 +96,7 @@ tests/
 
 ## 테스트와 검증
 
-- `lune run tests`: MovementLogic(점프 높이, 퍼펙트 판정, 탄도), WorldGen(섬 모양·배치·나선 섬 도달 거리), RequestLogic(메달·종 게이지·보상), Strings(언어별 키·형식 일치), ToyStats, TowerGen(결정성·탑 규칙·**도달 가능성 린트**: 청크를 바꾸면 반드시 통과해야 한다), RushLogic(해일·순위·코인·밟기 판정), GuardLogic(상승 예산·비행 판정).
+- `lune run tests`: MovementLogic(점프 높이, 퍼펙트 판정, 탄도), WorldGen(섬 모양·배치·나선 섬 도달 거리), RequestLogic(메달·종 게이지·보상), Strings(언어별 키·형식 일치), ToyStats, TowerGen(결정성·탑 규칙·**도달 가능성 린트**: 청크를 바꾸면 반드시 통과해야 한다), RushLogic(해일·순위·코인·밟기 판정), GuardLogic(상승 예산·비행 판정), ShopLogic(상품 데이터·구매·장착 규칙).
 - `selene src`, `stylua --check src tests`, `rojo build -o build/check.rbxlx`.
 - **`build/Skyhop.rbxlx`는 작업용 place다.** 에셋이 이 파일에만 있으므로 `rojo build`로 덮어쓰지 않는다. Studio에서 바꾼 뒤에는 Ctrl+S로 저장하고, git에 포함되어 있으니(.gitignore 예외) 함께 커밋한다.
 - 기능 완료 체크리스트:

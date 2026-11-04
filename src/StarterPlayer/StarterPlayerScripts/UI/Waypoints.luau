@@ -94,31 +94,47 @@ local function meters(d: number): string
 	return string.format("%d m", math.floor(d + 0.5))
 end
 
--- 화면 밖 목표 쪽 가장자리 화살표: 어두운 원 안의 꺾쇠(^)를 목표 방향으로 돌린다.
--- 원 없이 꺾쇠만 두면 "7"처럼 읽혔다
+-- 화면 밖 목표 쪽 가장자리 표시: 원 위로 뾰족한 끝이 튀어나온 핀 모양을 목표 쪽으로 돌린다.
+-- 꺾쇠(^)를 쓰면 기울었을 때 "7"이나 모서리처럼 읽혔다
 local function buildArrow(gui: ScreenGui)
 	arrow = Instance.new("Frame")
 	arrow.AnchorPoint = Vector2.new(0.5, 0.5)
-	arrow.Size = UDim2.fromOffset(38, 38)
-	arrow.BackgroundColor3 = COLOR.Badge
-	arrow.BackgroundTransparency = 0.2
+	arrow.Size = UDim2.fromOffset(44, 44)
+	arrow.BackgroundTransparency = 1
 	arrow.Visible = false
+	arrow.Parent = gui
+	-- 원 뒤에 놓은 마름모의 윗부분만 보여 끝이 된다 (형제 ZIndex로 순서를 정한다)
+	local tip = Instance.new("Frame")
+	tip.AnchorPoint = Vector2.new(0.5, 0.5)
+	tip.Position = UDim2.new(0.5, 0, 0, 6)
+	tip.Size = UDim2.fromOffset(18, 18)
+	tip.Rotation = 45
+	tip.BackgroundColor3 = COLOR.Icon
+	tip.BorderSizePixel = 0
+	tip.ZIndex = 1
+	stroke(tip, COLOR.Stroke, 2)
+	tip.Parent = arrow
+	local disc = Instance.new("Frame")
+	disc.AnchorPoint = Vector2.new(0.5, 0.5)
+	disc.Position = UDim2.new(0.5, 0, 0.5, 3)
+	disc.Size = UDim2.fromOffset(34, 34)
+	disc.BackgroundColor3 = COLOR.Badge
+	disc.BorderSizePixel = 0
+	disc.ZIndex = 2
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = arrow
-	stroke(arrow, COLOR.Icon, 2)
-	arrow.Parent = gui
-	-- 막대 반 길이 7, 40도: 두 막대 위 끝이 가운데에서 만난다
-	for _, side in { -1, 1 } do
-		local bar = Instance.new("Frame")
-		bar.AnchorPoint = Vector2.new(0.5, 0.5)
-		bar.Position = UDim2.new(0.5, side * 4.5, 0.5, 2)
-		bar.Size = UDim2.fromOffset(5, 14)
-		bar.Rotation = side * -40
-		bar.BackgroundColor3 = COLOR.Icon
-		bar.BorderSizePixel = 0
-		bar.Parent = arrow
-	end
+	corner.Parent = disc
+	stroke(disc, COLOR.Icon, 2)
+	disc.Parent = arrow
+	local dot = Instance.new("Frame")
+	dot.AnchorPoint = Vector2.new(0.5, 0.5)
+	dot.Position = UDim2.fromScale(0.5, 0.5)
+	dot.Size = UDim2.fromOffset(12, 12)
+	dot.Rotation = 45
+	dot.BackgroundColor3 = COLOR.Icon
+	dot.BorderSizePixel = 0
+	dot.ZIndex = 3
+	dot.Parent = disc
 	arrowLabel = distanceLabel(gui)
 	arrowLabel.AnchorPoint = Vector2.new(0.5, 0.5)
 	arrowLabel.Size = UDim2.fromOffset(70, 20)

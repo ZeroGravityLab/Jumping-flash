@@ -20,6 +20,11 @@ local COLOR = {
 	Cheek = Color3.fromRGB(255, 170, 200),
 	Eye = Color3.fromRGB(40, 40, 60),
 	MapSky = Color3.fromRGB(150, 200, 245),
+	Wood = Color3.fromRGB(150, 104, 66),
+	ShopStripe = Color3.fromRGB(90, 160, 240),
+	ShopStripeLight = Color3.fromRGB(245, 248, 255),
+	ShopGold = Color3.fromRGB(214, 160, 50),
+	ShopBoot = Color3.fromRGB(230, 70, 80),
 }
 
 local function part(props: { [string]: any }): Part
@@ -151,6 +156,99 @@ function Features.MapTable(top: Vector3, spec, parent: Instance)
 	prompt.RequiresLineOfSight = false
 	prompt:SetAttribute("SkyMap", true)
 	prompt.Parent = face
+	model.Parent = parent
+end
+
+-- 상점 가판대: 줄무늬 차양, 금화 간판, 진열한 부츠와 궤적 리본. 말을 걸면 코인 상점이 열린다 (클라이언트 ShopUi)
+-- 글자 간판은 언어마다 달라서 두지 않는다
+function Features.ShopStall(top: Vector3, spec, parent: Instance)
+	local base = groundOrTop(top, spec.x, spec.z)
+	local face = top + Vector3.new(spec.face[1], 0, spec.face[2])
+	local facing = CFrame.lookAt(base, Vector3.new(face.X, base.Y, face.Z))
+	local function at(x: number, y: number, z: number): CFrame
+		return facing * CFrame.new(x, y, z)
+	end
+	local model = Instance.new("Model")
+	model.Name = "ShopStall"
+	local counter = part({
+		Name = "Counter",
+		Size = Vector3.new(9, 3.2, 3),
+		CFrame = at(0, 1.6, 0),
+		Color = COLOR.Wood,
+		Material = Enum.Material.WoodPlanks,
+		Parent = model,
+	})
+	for _, x in { -4.3, 4.3 } do
+		part({
+			Name = "Post",
+			Size = Vector3.new(0.5, 8, 0.5),
+			CFrame = at(x, 4, 1.4),
+			Color = COLOR.Wood,
+			Parent = model,
+		})
+	end
+	for i = 1, 6 do
+		decorative(part({
+			Name = "Awning",
+			Size = Vector3.new(1.6, 0.2, 4.4),
+			CFrame = at(-4 + (i - 0.5) * 1.6, 7.6, -0.2) * CFrame.Angles(math.rad(-16), 0, 0),
+			Color = if i % 2 == 0 then COLOR.ShopStripeLight else COLOR.ShopStripe,
+			Parent = model,
+		}))
+	end
+	-- 금화 간판
+	decorative(part({
+		Name = "Coin",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.5, 3.4, 3.4),
+		CFrame = at(0, 9.6, 1.4) * CFrame.Angles(0, math.rad(90), 0),
+		Color = COLOR.Bell,
+		Material = Enum.Material.Neon,
+		Parent = model,
+	}))
+	decorative(part({
+		Name = "CoinRim",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.4, 4, 4),
+		CFrame = at(0, 9.6, 1.5) * CFrame.Angles(0, math.rad(90), 0),
+		Color = COLOR.ShopGold,
+		Parent = model,
+	}))
+	-- 진열: 카운터 위 부츠 한 켤레, 차양 끝의 궤적 리본
+	for _, x in { -2.6, -1.4 } do
+		decorative(part({
+			Name = "DisplayBoot",
+			Size = Vector3.new(0.9, 1, 1.4),
+			CFrame = at(x, 3.7, -0.2),
+			Color = COLOR.ShopBoot,
+			Parent = model,
+		}))
+		decorative(part({
+			Name = "DisplaySole",
+			Size = Vector3.new(1, 0.25, 1.5),
+			CFrame = at(x, 3.3, -0.2),
+			Color = COLOR.Cloud,
+			Parent = model,
+		}))
+	end
+	for i, color in { COLOR.Petal, COLOR.Cap, COLOR.MapSky } do
+		decorative(part({
+			Name = "Ribbon",
+			Size = Vector3.new(0.5, 2.6, 0.08),
+			CFrame = at(-3 + i * 1.5, 5.9, -2.3),
+			Color = color,
+			Material = Enum.Material.Neon,
+			Parent = model,
+		}))
+	end
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Shop" -- 클라이언트가 언어에 맞게 바꾼다
+	prompt.ObjectText = "Sky Shop"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt:SetAttribute("Shop", true)
+	prompt.Parent = counter
 	model.Parent = parent
 end
 

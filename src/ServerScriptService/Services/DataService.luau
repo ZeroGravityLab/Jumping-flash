@@ -19,9 +19,11 @@ export type Profile = {
 	schemaVersion: number,
 	coins: number,
 	requests: { [string]: { medal: string, bestTime: number } },
+	owned: { [string]: boolean }, -- 산 상점 물건 id
+	equipped: { [string]: string }, -- 칸(Config Shop.Categories) -> 물건 id
 }
 
-local TEMPLATE: Profile = { schemaVersion = SCHEMA_VERSION, coins = 0, requests = {} }
+local TEMPLATE: Profile = { schemaVersion = SCHEMA_VERSION, coins = 0, requests = {}, owned = {}, equipped = {} }
 
 local store = ProfileStore.New(STORE_NAME, TEMPLATE)
 local sessions: { [Player]: any } = {}
@@ -30,6 +32,8 @@ local sessions: { [Player]: any } = {}
 local function publish(player: Player, data: Profile)
 	player:SetAttribute("Coins", data.coins)
 	player:SetAttribute("RequestProgress", HttpService:JSONEncode(data.requests))
+	player:SetAttribute("ShopOwned", HttpService:JSONEncode(data.owned))
+	player:SetAttribute("ShopEquipped", HttpService:JSONEncode(data.equipped))
 end
 
 local function load(player: Player)
