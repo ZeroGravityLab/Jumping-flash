@@ -106,6 +106,25 @@ function RushHud.start(hop, ui, requestController, skyCamera)
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local joinRemote = remotes:WaitForChild(Remotes.RushJoin) :: RemoteEvent
 	local resultRemote = remotes:WaitForChild(Remotes.RushResult) :: RemoteEvent
+	local stompRemote = remotes:WaitForChild(Remotes.RushStomp) :: RemoteEvent
+	local stompedRemote = remotes:WaitForChild(Remotes.RushStomped) :: RemoteEvent
+
+	-- 라이벌 밟기: 탑 위에서 다른 참가자의 머리를 밟으면 서버에 알린다 (밟힌 쪽 효과는 서버가 확인한 뒤 보낸다)
+	hop.onBounce:Connect(function(kind, _, _, part)
+		if kind ~= "buddy" or not part or player:GetAttribute("RushRunning") ~= true then
+			return
+		end
+		local model = part:FindFirstAncestorOfClass("Model")
+		local victim = model and Players:GetPlayerFromCharacter(model)
+		if victim then
+			stompRemote:FireServer(victim)
+		end
+	end)
+	stompedRemote.OnClientEvent:Connect(function(seconds, jumpsLost)
+		if type(seconds) == "number" and type(jumpsLost) == "number" then
+			hop.stagger(seconds, jumpsLost)
+		end
+	end)
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "SkyhopRush"

@@ -31,6 +31,22 @@ return {
 	RankBonusMinPlayers = 2, -- 혼자 하면 늘 1위라 순위 보너스를 주지 않는다
 	BellBonus = 25,
 
+	-- 라이벌 밟기 (GDD 7.2): 밟힌 쪽은 휘청이고 공중 점프를 잃는다. 그 뒤 잠깐 무적
+	StompWobble = 0.6,
+	StompJumpsLost = 1,
+	StompImmunity = 1.5,
+	-- 서버 확인 범위: 밟은 쪽 루트가 밟힌 쪽 루트보다 StompMinRise~StompMaxRise 위, 수평 StompMaxReach 안 (네트워크 지연 여유 포함)
+	StompMinRise = -2,
+	StompMaxRise = 14,
+	StompMaxReach = 10,
+
+	-- MovementGuard (GDD 14.2): 새 최고 높이는 한 번에 GuardRiseBurst까지, 평균 GuardRiseRate(초당)로 회복.
+	-- GuardMaxRiseTime초 넘게 쉬지 않고 오르면 비행으로 본다 (정상 플레이의 가장 긴 연속 상승은 약 4초)
+	GuardRiseBurst = 300,
+	GuardRiseRate = 40,
+	GuardMaxRiseTime = 8,
+	GuardRisingStep = 0.5, -- 한 번 볼 때 이만큼 넘게 오르면 "오르는 중"
+
 	-- 도달 가능성 린트 (GDD 14.3): 퍼펙트 없는 3단 점프 기준에 여유를 둔 값
 	LintMaxRise = 100, -- 3단 점프 합계 약 125
 	LintPadRise = 200, -- 바운스 패드 약 102 + 공중 점프 2번

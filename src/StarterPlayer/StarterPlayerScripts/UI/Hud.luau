@@ -346,6 +346,9 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
 	hop.onBell:Connect(function()
 		showPopup(t("Bell"), COLOR.Perfect)
 	end)
+	hop.onStaggered:Connect(function()
+		showPopup(t("Stomped"), COLOR.Stomp)
+	end)
 
 	local sinceStatsRefresh = 0
 	RunService.RenderStepped:Connect(function(dt)

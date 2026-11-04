@@ -37,6 +37,15 @@ return {
 		check.equal(RushLogic.coins(Rush, 0, 1, 4, true), Rush.RankBonus[1] + Rush.BellBonus)
 	end,
 
+	["라이벌 밟기: 위에서 가까이 밟아야 하고, 무적 시간에는 안 된다"] = function()
+		check.equal(RushLogic.canStomp(Rush, 5, 2, 10, nil), true)
+		check.equal(RushLogic.canStomp(Rush, -8, 2, 10, nil), false) -- 아래에서
+		check.equal(RushLogic.canStomp(Rush, 5, Rush.StompMaxReach + 1, 10, nil), false) -- 멀다
+		check.equal(RushLogic.canStomp(Rush, Rush.StompMaxRise + 1, 2, 10, nil), false) -- 너무 높다
+		check.equal(RushLogic.canStomp(Rush, 5, 2, 10, 10 + Rush.StompImmunity), false) -- 무적
+		check.equal(RushLogic.canStomp(Rush, 5, 2, 12, 11.5), true)
+	end,
+
 	["혼자 하면 순위 보너스가 없다"] = function()
 		check.equal(RushLogic.coins(Rush, 0, 1, 1, false), 0)
 		check.equal(RushLogic.coins(Rush, 0, 1, 1, true), Rush.BellBonus)

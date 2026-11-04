@@ -21,6 +21,7 @@ local HopController = {
 	onLand = Signal.new(), -- (stomped, feetPosition)
 	onBell = Signal.new(), -- (feetPosition)
 	onRespawn = Signal.new(), -- 구름 바다로 떨어져 되돌아왔을 때
+	onStaggered = Signal.new(), -- (seconds) 러시에서 라이벌에게 밟혀 휘청일 때
 	stats = {
 		startedAt = os.clock(),
 		airJumps = {}, -- ToyStats.AirJump 목록
@@ -41,6 +42,8 @@ local stomping = false
 local combo = 0
 local perfectStreak = 0
 local landedAt = -math.huge
+local staggerUntil = 0
+local staggering = false
 local lastGroundedAt = -math.huge
 local groundLockUntil = 0
 local lastLaunchAt = -math.huge
@@ -211,6 +214,9 @@ local function onJumpPressed()
 		return -- 지면 점프는 Humanoid 기본 입력이 처리한다
 	end
 	local now = os.clock()
+	if now < staggerUntil then
+		return -- 휘청이는 동안은 점프할 수 없다
+	end
 	local rising = root.AssemblyLinearVelocity.Y > Movement.LandingMaxVy
 	if humanoid.FloorMaterial ~= Enum.Material.Air and not rising and now >= groundLockUntil then
 		return -- 이번 프레임에 막 착지했다
@@ -242,6 +248,19 @@ local function onJumpPressed()
 		end
 	end
 	HopController.onJump:Fire(jump.index, jump.perfect, HopController.feetPosition(), perfectStreak)
+end
+
+-- 러시에서 라이벌에게 밟혔다 (서버가 확인한 뒤 RushHud가 부른다): seconds 동안 느리게 걷고 점프할 수 없다.
+-- 공중이었다면 공중 점프를 jumpsLost만큼 잃는다
+function HopController.stagger(seconds: number, jumpsLost: number)
+	if not humanoid or humanoid.Health <= 0 then
+		return
+	end
+	staggerUntil = os.clock() + seconds
+	if not grounded then
+		jumpsUsed = math.min(math.max(jumpsUsed, 1) + jumpsLost, MovementLogic.maxJumps(Movement))
+	end
+	HopController.onStaggered:Fire(seconds)
 end
 
 function HopController.stomp()
@@ -428,6 +447,16 @@ local function step(dt: number)
 	if humanoid.JumpPower ~= Movement.JumpVelocity[1] and now - lastLaunchAt > Movement.GroundLockTime then
 		humanoid.JumpPower = Movement.JumpVelocity[1]
 	end
+	-- 휘청: 지면 점프도 막고 느리게 걷는다 (위에서 되돌린 값을 덮어쓴다)
+	if now < staggerUntil then
+		staggering = true
+		humanoid.WalkSpeed = Movement.StaggerSpeed
+		humanoid.JumpPower = 0
+	elseif staggering then
+		staggering = false
+		humanoid.WalkSpeed = if grounded then Movement.WalkSpeed else Movement.AirSpeed
+		humanoid.JumpPower = Movement.JumpVelocity[1]
+	end
 
 	checkBells(now)
 	HopController.stats.maxAltitude = math.max(HopController.stats.maxAltitude, HopController.altitude())
@@ -438,8 +467,8 @@ local function onStateChanged(_, newState: Enum.HumanoidStateType)
 		return
 	end
 	local now = os.clock()
-	if now - lastLaunchAt <= Movement.GroundLockTime then
-		return -- launch()가 일으킨 점프
+	if now - lastLaunchAt <= Movement.GroundLockTime or now < staggerUntil then
+		return -- launch()가 일으킨 점프, 또는 휘청이는 동안(JumpPower 0)의 헛점프
 	end
 	-- Humanoid 기본 입력으로 뛴 지면 점프. 점프 키를 누른 채 착지하면 land()보다 먼저 올 수 있다
 	lastLaunchAt = now

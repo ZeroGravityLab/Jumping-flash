@@ -3,10 +3,13 @@
 --   Phase: "Lobby" | "Countdown" | "Running" | "Results", PhaseEndsAt·StartedAt: 서버 시간(GetServerTimeNow)
 --   TowerBaseY·TowerTopY, Alive(남은 사람 수), Total(참가자 수), Rang(종을 울린 사람 수)
 -- 플레이어 속성: RushJoined(다음 판 참가 신청), RushRunning(지금 탑 위에 있음)
+-- 라이벌 밟기: 밟은 클라이언트의 보고를 서버가 위치·무적 시간으로 확인한 뒤 밟힌 클라이언트에 휘청을 보낸다.
+-- MovementGuard (GDD 14.2): 참가자의 높이를 ServerTick마다 GuardLogic으로 보고, 걸리면 마지막 정상 위치로 되돌린다
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Chunks = require(ReplicatedStorage.Config.Chunks)
+local GuardLogic = require(ReplicatedStorage.Shared.GuardLogic)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Rush = require(ReplicatedStorage.Config.Rush)
 local RushLogic = require(ReplicatedStorage.Shared.RushLogic)
@@ -18,13 +21,24 @@ local TowerBuilder = require(script.Parent.Parent.World.TowerBuilder)
 local RoundService = {}
 
 local JOIN_INTERVAL = 0.3
+local STOMP_INTERVAL = 0.3
 local FEET_OFFSET = 3 -- 루트 파트 중심에서 발까지 (R15 기본 체형 기준 근삿값)
 
-type Runner = { maxHeight: number, rangAt: number?, out: boolean }
+type Runner = {
+	maxHeight: number,
+	rangAt: number?,
+	out: boolean,
+	guard: GuardLogic.State?,
+	lastValid: CFrame?,
+	flags: number,
+}
 
 local state: Folder
 local resultRemote: RemoteEvent
+local stompedRemote: RemoteEvent
 local joined: { [Player]: boolean } = {}
+local current: { [Player]: Runner }? = nil -- 지금 라운드의 참가자 (진행 중일 때만)
+local immuneUntil: { [Player]: number } = {}
 
 local function now(): number
 	return workspace:GetServerTimeNow()
@@ -70,22 +84,28 @@ local function runRound(entrants: { Player })
 		if character then
 			character:PivotTo(CFrame.lookAt(spot, Vector3.new(info.origin.X, spot.Y, info.origin.Z)))
 		end
-		runners[player] = { maxHeight = 0, out = false }
+		runners[player] = { maxHeight = 0, out = false, flags = 0 }
 		player:SetAttribute("RushRunning", true)
 	end
 	state:SetAttribute("Alive", #entrants)
+	table.clear(immuneUntil)
 
 	setPhase("Countdown", Rush.CountdownSeconds)
 	task.wait(Rush.CountdownSeconds)
 	local startedAt = now()
 	state:SetAttribute("StartedAt", startedAt)
 	setPhase("Running", Rush.MaxRoundSeconds)
+	current = runners
 
 	local firstRingAt: number? = nil
 	local rang = 0
+	local lastTick = now()
 	while true do
 		task.wait(Rush.ServerTick)
-		local elapsed = now() - startedAt
+		local tickAt = now()
+		local dt = tickAt - lastTick
+		lastTick = tickAt
+		local elapsed = tickAt - startedAt
 		local tideY = info.origin.Y + RushLogic.tideHeight(Rush, elapsed)
 		local alive = 0
 		for player, run in runners do
@@ -98,6 +118,33 @@ local function runRound(entrants: { Player })
 				player:SetAttribute("RushRunning", false)
 				continue
 			end
+
+			-- MovementGuard: 이상한 상승이면 마지막 정상 위치로 되돌리고 이번에는 높이·종을 보지 않는다
+			if not run.guard then
+				run.guard = GuardLogic.new(Rush, root.Position.Y)
+			end
+			local guard = run.guard :: GuardLogic.State
+			local ok, reason = GuardLogic.step(Rush, guard, root.Position.Y, dt)
+			if not ok then
+				run.flags += 1
+				warn(
+					string.format(
+						"[MovementGuard] %s: %s at %.0f (flag %d)",
+						player.Name,
+						tostring(reason),
+						root.Position.Y,
+						run.flags
+					)
+				)
+				if run.lastValid and player.Character then
+					player.Character:PivotTo(run.lastValid)
+					GuardLogic.reset(guard, run.lastValid.Position.Y)
+				end
+				alive += 1
+				continue
+			end
+			run.lastValid = root.CFrame
+
 			local feetY = root.Position.Y - FEET_OFFSET
 			run.maxHeight = math.max(run.maxHeight, feetY - info.origin.Y)
 			if not run.rangAt and (root.Position - info.bell).Magnitude <= Rush.BellRadius then
@@ -124,6 +171,7 @@ local function runRound(entrants: { Player })
 			break
 		end
 	end
+	current = nil
 
 	local entries = {}
 	for player, run in runners do
@@ -175,6 +223,7 @@ local function loop()
 		table.clear(joined)
 		if #entrants > 0 then
 			local ok, err = pcall(runRound, entrants)
+			current = nil
 			if not ok then
 				warn("[RoundService] round failed:", err)
 				local leftover = workspace:FindFirstChild("RushTower")
@@ -203,8 +252,34 @@ function RoundService.start()
 		joined[player] = if wants then true else nil
 		player:SetAttribute("RushJoined", wants)
 	end)
+
+	-- 라이벌 밟기: 둘 다 아직 탑 위에 있고, 위치가 맞고, 밟힌 쪽이 무적이 아닐 때만
+	stompedRemote = Net.event(Remotes.RushStomped)
+	Net.handleEvent(Remotes.RushStomp, STOMP_INTERVAL, function(player, victim)
+		if typeof(victim) ~= "Instance" or not victim:IsA("Player") or victim == player then
+			return
+		end
+		local runners = current
+		local attacker, target = runners and runners[player], runners and runners[victim :: Player]
+		if not (attacker and target) or attacker.out or target.out then
+			return
+		end
+		local from, to = rootOf(player), rootOf(victim :: Player)
+		if not (from and to) then
+			return
+		end
+		local d = from.Position - to.Position
+		local at = now()
+		if not RushLogic.canStomp(Rush, d.Y, Vector3.new(d.X, 0, d.Z).Magnitude, at, immuneUntil[victim :: Player]) then
+			return
+		end
+		immuneUntil[victim :: Player] = at + Rush.StompImmunity
+		stompedRemote:FireClient(victim :: Player, Rush.StompWobble, Rush.StompJumpsLost)
+	end)
+
 	Players.PlayerRemoving:Connect(function(player)
 		joined[player] = nil
+		immuneUntil[player] = nil
 	end)
 	task.spawn(loop)
 end

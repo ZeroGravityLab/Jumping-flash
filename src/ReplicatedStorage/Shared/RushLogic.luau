@@ -26,6 +26,15 @@ function RushLogic.rank(entries: { Entry }): { Entry }
 	return sorted
 end
 
+-- 라이벌 밟기를 인정하는가: 밟은 쪽이 위에 있고 가까우며, 밟힌 쪽이 무적이 아니다
+-- rise = 밟은 쪽 루트 높이 - 밟힌 쪽 루트 높이, reach = 두 루트의 수평 거리
+function RushLogic.canStomp(cfg, rise: number, reach: number, now: number, immuneUntil: number?): boolean
+	return rise >= cfg.StompMinRise
+		and rise <= cfg.StompMaxRise
+		and reach <= cfg.StompMaxReach
+		and now >= (immuneUntil or 0)
+end
+
 -- 코인: 높이(MetersPerCoin마다 1) + 순위 보너스(경쟁 상대가 있을 때만) + 종 보너스
 function RushLogic.coins(cfg, heightMeters: number, rank: number, total: number, rang: boolean): number
 	local coins = math.floor(math.max(heightMeters, 0) / cfg.MetersPerCoin)

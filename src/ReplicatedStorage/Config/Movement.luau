@@ -20,6 +20,7 @@ return {
 	StompBounce = 95,
 	StompRestoreJumps = 1,
 	BuddyBounceMult = 1.4,
+	StaggerSpeed = 6, -- 러시에서 밟혀 휘청이는 동안의 걷기 속도 (점프는 막힌다)
 	BouncePadVelocity = 150,
 	UpdraftVelocity = 60,
 	PufflingRespawn = 3,

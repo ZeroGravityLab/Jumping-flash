@@ -5,8 +5,8 @@ Roblox 수직 하이점프 3D 플랫포머 (글로벌 출시, 기본 영어). 1�
 
 ## 현재 단계
 
-- **W3 진행 중** (2026-11-04, 사용자 요청 "계속 개발 진행해줘"). W2(떠 있는 섬 월드, 아찔함 연출, 의뢰 시스템, 모바일 UI 배치, ProfileStore 저장, 연속 퍼펙트 연출)는 끝났다. W3 순서: ① 1장 의뢰 10개·유형 6종 (완료: 주민 렌 + 경주 유형) → ② 하늘 지도 (완료: UI/SkyMap, 허브 지도 탁자, 길 안내 빛기둥) → ③ 주민 이야기 끝 연출 (완료: 브람 → 허브 빵집, Requests/Stories, Config Requests.Stories) → ④ 클라우드 러시(해일·종·라이벌 밟기·청크 15개). ④는 1단계 완료(탑·해일·종·결과, GDD 7.2), 2단계 남음(라이벌 밟기, MovementGuard). 아이콘은 아트 작업이라 코드 범위 밖.
-- 러시 테스트: 대기 20초 동안 띠의 참가 버튼을 누른다(MCP 실행 스레드는 Remote를 못 쏜다). 클라이언트에서 루트를 Anchored로 고정하면 서버가 떨어진 것으로 보고 탈락시키므로, 실제 발판 위에 세워서 본다.
+- **W3 진행 중** (2026-11-04, 사용자 요청 "계속 개발 진행해줘"). W2(떠 있는 섬 월드, 아찔함 연출, 의뢰 시스템, 모바일 UI 배치, ProfileStore 저장, 연속 퍼펙트 연출)는 끝났다. W3 순서: ① 1장 의뢰 10개·유형 6종 (완료: 주민 렌 + 경주 유형) → ② 하늘 지도 (완료: UI/SkyMap, 허브 지도 탁자, 길 안내 빛기둥) → ③ 주민 이야기 끝 연출 (완료: 브람 → 허브 빵집, Requests/Stories, Config Requests.Stories) → ④ 클라우드 러시(해일·종·라이벌 밟기·청크 15개). ④는 1·2단계 완료(탑·해일·종·결과, 라이벌 밟기, MovementGuard — GDD 7.2·14.2). W3 코드 항목은 모두 끝났다. 남은 것: 2인 이상 러시 실제 테스트(밟기 장면 미확인), W3 완료 기준인 지인 3~5명 테스트. 아이콘은 아트 작업이라 코드 범위 밖.
+- 러시 테스트: 대기 20초 동안 띠의 참가 버튼을 누른다(MCP 실행 스레드는 Remote를 못 쏜다). 클라이언트에서 루트를 Anchored로 고정하면 서버가 떨어진 것으로 보고 탈락시키므로, 실제 발판 위에 세워서 본다. 러시 중 300보다 높이 순간이동하면 MovementGuard가 되돌린다(출력 창 `[MovementGuard]`) — 테스트에서 높은 곳을 볼 때는 낮은 발판부터 차례로 옮기거나 경고를 감안한다.
 - place가 게시 전이라 Studio에서는 ProfileStore가 메모리 저장소로 돈다(실제 저장 확인은 게시하고 API 접근을 켠 뒤). 플레이를 다시 시작하면 의뢰 진행이 비므로, 선행 의뢰가 있는 의뢰는 앞 의뢰부터 다시 끝내고 확인한다. UI만 볼 때는 Client `execute_luau`로 `RequestProgress` 속성을 이 클라이언트에서만 바꿔 써도 된다(서버 데이터는 그대로).
 - 모바일 점검은 Studio Test → Device Simulator로 한다. 플레이를 다시 시작하면 가로로 돌아가고, 프롬프트는 카메라 화면 안에 있어야 뜬다.
 - 개발자 본인 손맛 테스트는 2026-11-04 통과("손맛 좋다"). 테스터 5명 기준 토이 게이트(GDD 15장)는 아직 남아 있다. W4 이후 기능(데일리 어센트, 리그, 부츠 등)은 요청 전에 만들지 않는다. 단계가 바뀌면 이 섹션을 갱신한다.
@@ -47,7 +47,7 @@ src/
     Config/                   Movement, Camera, World(섬 배치), Requests(주민·의뢰), Rush(러시 라운드·해일·보상),
                               Chunks(러시 청크 15종 발판 데이터) — 순수 데이터 테이블만
     Shared/                   MovementLogic, WorldGen, RequestLogic, ToyStats, TowerGen(시드→탑·도달 가능성 린트),
-                              RushLogic(해일·순위·코인) (순수 함수),
+                              RushLogic(해일·순위·코인·밟기 판정), GuardLogic(MovementGuard 규칙) (순수 함수),
                               Strings, Tags, Signal, Remotes(이름만, 인스턴스는 Services/Net이 만든다)
   ServerScriptService/
     Main.server.luau          부트스트랩: 서비스 시작 → 월드 생성 → 캐릭터 생성 허용
@@ -91,7 +91,7 @@ tests/
 
 ## 테스트와 검증
 
-- `lune run tests`: MovementLogic(점프 높이, 퍼펙트 판정, 탄도), WorldGen(섬 모양·배치·나선 섬 도달 거리), RequestLogic(메달·종 게이지·보상), Strings(언어별 키·형식 일치), ToyStats, TowerGen(결정성·탑 규칙·**도달 가능성 린트**: 청크를 바꾸면 반드시 통과해야 한다), RushLogic(해일·순위·코인).
+- `lune run tests`: MovementLogic(점프 높이, 퍼펙트 판정, 탄도), WorldGen(섬 모양·배치·나선 섬 도달 거리), RequestLogic(메달·종 게이지·보상), Strings(언어별 키·형식 일치), ToyStats, TowerGen(결정성·탑 규칙·**도달 가능성 린트**: 청크를 바꾸면 반드시 통과해야 한다), RushLogic(해일·순위·코인·밟기 판정), GuardLogic(상승 예산·비행 판정).
 - `selene src`, `stylua --check src tests`, `rojo build -o build/check.rbxlx`.
 - **`build/Skyhop.rbxlx`는 작업용 place다.** 에셋이 이 파일에만 있으므로 `rojo build`로 덮어쓰지 않는다. Studio에서 바꾼 뒤에는 Ctrl+S로 저장하고, git에 포함되어 있으니(.gitignore 예외) 함께 커밋한다.
 - 기능 완료 체크리스트:

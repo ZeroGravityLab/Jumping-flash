@@ -2,6 +2,7 @@
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
@@ -189,6 +190,47 @@ function Effects.start(hop)
 			play("Land", 0.7, 0.8)
 			ring(position, COLOR.Shockwave, 3, 22, 0.4)
 		end
+	end)
+
+	-- 러시에서 밟혀 휘청: 쿵 소리와 머리 위를 도는 별
+	hop.onStaggered:Connect(function(seconds)
+		play("Land", 0.5, 1)
+		local root = hop.rootPart()
+		if not root then
+			return
+		end
+		local stars = {}
+		for i = 1, 3 do
+			local star = Instance.new("Part")
+			star.Name = "DizzyStar"
+			star.Shape = Enum.PartType.Ball
+			star.Anchored = true
+			star.CanCollide = false
+			star.CanQuery = false
+			star.CanTouch = false
+			star.CastShadow = false
+			star.Material = Enum.Material.Neon
+			star.Color = COLOR.Perfect
+			star.Size = Vector3.new(0.9, 0.9, 0.9)
+			star.Parent = folder
+			stars[i] = star
+		end
+		local started = os.clock()
+		local connection
+		connection = RunService.RenderStepped:Connect(function()
+			local t = os.clock() - started
+			if t > seconds or not root.Parent then
+				for _, star in stars do
+					star:Destroy()
+				end
+				connection:Disconnect()
+				return
+			end
+			for i, star in stars do
+				local angle = t * 9 + i * math.pi * 2 / 3
+				star.CFrame = CFrame.new(root.Position + Vector3.new(math.cos(angle) * 1.8, 3.4, math.sin(angle) * 1.8))
+			end
+		end)
 	end)
 
 	hop.onBell:Connect(function(position)
