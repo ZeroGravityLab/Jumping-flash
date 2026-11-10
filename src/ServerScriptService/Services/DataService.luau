@@ -22,10 +22,11 @@ export type Profile = {
 	owned: { [string]: boolean }, -- 산 상점 물건 id
 	equipped: { [string]: string }, -- 칸(Config Shop.Categories) -> 물건 id
 	shards: { [string]: boolean }, -- 주운 숨은 별조각 id (Config Collectibles)
+	settings: { [string]: any }, -- 플레이어 설정 (Config Settings, SettingsLogic로 거른 값)
 }
 
 local TEMPLATE: Profile =
-	{ schemaVersion = SCHEMA_VERSION, coins = 0, requests = {}, owned = {}, equipped = {}, shards = {} }
+	{ schemaVersion = SCHEMA_VERSION, coins = 0, requests = {}, owned = {}, equipped = {}, shards = {}, settings = {} }
 
 local store = ProfileStore.New(STORE_NAME, TEMPLATE)
 local sessions: { [Player]: any } = {}
@@ -37,6 +38,7 @@ local function publish(player: Player, data: Profile)
 	player:SetAttribute("ShopOwned", HttpService:JSONEncode(data.owned))
 	player:SetAttribute("ShopEquipped", HttpService:JSONEncode(data.equipped))
 	player:SetAttribute("Shards", HttpService:JSONEncode(data.shards))
+	player:SetAttribute("Settings", HttpService:JSONEncode(data.settings))
 end
 
 local function load(player: Player)

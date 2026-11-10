@@ -18,6 +18,7 @@ local Stories = require(Requests:WaitForChild("Stories"))
 local RushHud = require(UI:WaitForChild("RushHud"))
 local Waypoints = require(UI:WaitForChild("Waypoints"))
 local ShopUi = require(UI:WaitForChild("ShopUi"))
+local SettingsUi = require(UI:WaitForChild("SettingsUi"))
 local StarShards = require(Requests:WaitForChild("StarShards"))
 local Boss = require(Requests:WaitForChild("Boss"))
 local Greeting = require(Requests:WaitForChild("Greeting"))
@@ -31,11 +32,12 @@ Ambience.start()
 Greeting.start()
 RequestUi.start()
 SkyMap.start(HopController, RequestUi)
-Hud.start(HopController, SkyCamera, LandingMarker, Vertigo, SkyMap)
+Hud.start(HopController, SkyCamera, LandingMarker, Vertigo, SkyMap, SettingsUi)
 Waypoints.start(HopController)
 RequestController.start(HopController, RequestUi, Waypoints)
 Soundscape.start(HopController, RequestController)
 task.spawn(ShopUi.start) -- 서버의 상점 Remote를 기다린다
+task.spawn(SettingsUi.start, SkyCamera, LandingMarker) -- 서버의 설정 Remote를 기다린다
 task.spawn(StarShards.start, HopController, RequestUi) -- 서버의 별조각 Remote를 기다린다
 task.spawn(Stories.start, HopController, RequestUi, SkyMap) -- 섬이 다 지어질 때까지 기다린다
 task.spawn(RushHud.start, HopController, RequestUi, RequestController, SkyCamera) -- 서버의 러시 상태를 기다린다

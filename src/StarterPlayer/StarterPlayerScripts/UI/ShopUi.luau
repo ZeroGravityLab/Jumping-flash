@@ -304,6 +304,7 @@ local function build()
 	close.AnchorPoint = Vector2.new(1, 0)
 	close.Position = UDim2.new(1, -10, 0, 10)
 	close.Size = UDim2.fromOffset(40, 36)
+	close.Modal = true -- 창이 열려 있는 동안 1인칭의 마우스 고정을 푼다
 	close.Activated:Connect(ShopUi.close)
 
 	for i, category in Shop.Categories do

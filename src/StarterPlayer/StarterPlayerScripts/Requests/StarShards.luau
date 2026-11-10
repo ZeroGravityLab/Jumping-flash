@@ -14,6 +14,7 @@ local CollectibleLogic = require(ReplicatedStorage.Shared.CollectibleLogic)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local ShopLogic = require(ReplicatedStorage.Shared.ShopLogic)
 local Strings = require(ReplicatedStorage.Shared.Strings)
+local AudioGroups = require(script.Parent.Parent.Movement.AudioGroups)
 
 local player = Players.LocalPlayer
 
@@ -118,6 +119,7 @@ local function chime(speed: number)
 	sound.SoundId = CHIME
 	sound.PlaybackSpeed = speed
 	sound.Volume = 0.8
+	sound.SoundGroup = AudioGroups.sounds()
 	sound.Parent = SoundService
 	sound:Play()
 	Debris:AddItem(sound, 3)

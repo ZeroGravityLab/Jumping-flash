@@ -11,6 +11,7 @@ local TweenService = game:GetService("TweenService")
 local World = require(ReplicatedStorage.Config.World)
 local Tags = require(ReplicatedStorage.Shared.Tags)
 local WorldGen = require(ReplicatedStorage.Shared.WorldGen)
+local AudioGroups = require(script.Parent.Parent.Movement.AudioGroups)
 
 local Objectives = {}
 
@@ -416,6 +417,7 @@ local function thunder(speed: number, volume: number)
 	sound.SoundId = THUNDER_SOUND
 	sound.PlaybackSpeed = speed
 	sound.Volume = volume
+	sound.SoundGroup = AudioGroups.sounds()
 	sound.Parent = SoundService
 	sound:Play()
 	Debris:AddItem(sound, 4)

@@ -7,6 +7,7 @@ local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local Movement = require(ReplicatedStorage.Config.Movement)
+local AudioGroups = require(script.Parent.AudioGroups)
 local MovementLogic = require(ReplicatedStorage.Shared.MovementLogic)
 
 -- Roblox 클라이언트 내장 사운드 (2026-11-02 로컬 content/sounds에서 확인). 전용 사운드는 아트 단계에서 교체
@@ -45,6 +46,7 @@ local function play(name: string, speed: number, volume: number)
 	sound.SoundId = SOUND_ID[name]
 	sound.PlaybackSpeed = speed
 	sound.Volume = volume
+	sound.SoundGroup = AudioGroups.sounds()
 	sound.Parent = SoundService
 	sound:Play()
 	Debris:AddItem(sound, 3)

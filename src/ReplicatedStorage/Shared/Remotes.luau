@@ -11,4 +11,5 @@ return table.freeze({
 	ShopBuy = "ShopBuy", -- RemoteFunction(itemId) -> ok, reasonKey?. 사면 바로 장착한다
 	ShopEquip = "ShopEquip", -- RemoteFunction(category, itemId?) -> ok. itemId가 nil이면 그 칸을 비운다
 	ShardCollect = "ShardCollect", -- RemoteEvent(shardId). 숨은 별조각에 닿았다는 보고. 결과는 Shards 속성으로 알린다
+	SettingsSave = "SettingsSave", -- RemoteEvent(settings 표). 서버가 SettingsLogic으로 걸러 저장한다
 })

@@ -189,6 +189,7 @@ function RequestUi.start()
 	startButton.Name = "StartButton"
 	laterButton = button(dialog, Color3.fromRGB(90, 100, 130), UDim2.new(1, -146, 1, -16))
 	laterButton.Name = "LaterButton"
+	laterButton.Modal = true -- 대화가 떠 있는 동안 1인칭의 마우스 고정을 푼다
 	startButton.Activated:Connect(function()
 		dialog.Visible = false
 		local callback = onStartCallback
@@ -275,6 +276,7 @@ function RequestUi.start()
 	local storyOk = button(storyCard, COLOR.Accept, UDim2.new(1, -16, 1, -12))
 	storyOk.Name = "OkButton"
 	storyOk.Text = t("Ok")
+	storyOk.Modal = true
 	storyOk.Activated:Connect(RequestUi.hideStory)
 
 	tracker.Name = "Tracker"

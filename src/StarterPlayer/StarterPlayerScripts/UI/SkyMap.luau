@@ -638,6 +638,7 @@ local function build()
 	closeButton.Name = "CloseButton"
 	closeButton.Position = UDim2.fromOffset(138, 196)
 	closeButton.Size = UDim2.fromOffset(96, 36)
+	closeButton.Modal = true -- 지도가 열려 있는 동안 1인칭의 마우스 고정을 푼다
 	closeButton.Activated:Connect(SkyMap.close)
 end
 

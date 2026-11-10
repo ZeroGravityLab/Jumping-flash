@@ -11,6 +11,7 @@ local CameraConfig = require(ReplicatedStorage.Config.Camera)
 local Movement = require(ReplicatedStorage.Config.Movement)
 local World = require(ReplicatedStorage.Config.World)
 local Tags = require(ReplicatedStorage.Shared.Tags)
+local AudioGroups = require(script.Parent.AudioGroups)
 
 local player = Players.LocalPlayer
 
@@ -115,6 +116,7 @@ function Vertigo.start(hop)
 	wind.SoundId = WIND_SOUND
 	wind.Looped = true
 	wind.Volume = 0
+	wind.SoundGroup = AudioGroups.sounds()
 	wind.Parent = SoundService
 	wind:Play()
 

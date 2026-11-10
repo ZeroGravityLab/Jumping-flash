@@ -54,6 +54,31 @@ occlusionParams.RespectCanCollide = true
 local dropParams = RaycastParams.new()
 dropParams.FilterType = Enum.RaycastFilterType.Exclude
 
+-- 창(설정·상점·지도·대화)의 Modal 버튼이 화면에 보이면 1인칭이어도 마우스를 풀고 시점을 돌리지 않는다
+local modalButtons: { [GuiButton]: true } = {}
+
+local function shownOnScreen(item: Instance): boolean
+	local node: Instance? = item
+	while node do
+		if node:IsA("GuiObject") and not node.Visible then
+			return false
+		elseif node:IsA("LayerCollector") then
+			return (node :: ScreenGui).Enabled
+		end
+		node = node.Parent
+	end
+	return false
+end
+
+local function cursorFree(): boolean
+	for b in modalButtons do
+		if shownOnScreen(b) then
+			return true
+		end
+	end
+	return false
+end
+
 local function turn(yawDelta: number, pitchDelta: number)
 	yaw -= yawDelta
 	pitch = math.clamp(pitch - pitchDelta, PITCH_MIN, PITCH_MAX)
@@ -78,6 +103,13 @@ function SkyCamera.faceToward(target: Vector3)
 	local d = target - root.Position
 	if Vector3.new(d.X, 0, d.Z).Magnitude > 1e-3 then
 		yaw = math.atan2(-d.X, -d.Z)
+	end
+end
+
+-- 설정에서 저장된 시점을 되살릴 때
+function SkyCamera.setMode(mode: string)
+	if mode ~= SkyCamera.mode then
+		SkyCamera.toggle()
 	end
 end
 
@@ -127,7 +159,9 @@ local function update(hop, dt: number)
 	camera.FieldOfView = CameraConfig.Fov + (CameraConfig.FovMax - CameraConfig.Fov) * altitude01 + fovBonus
 
 	if SkyCamera.mode == "First" then
-		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		UserInputService.MouseBehavior = if cursorFree()
+			then Enum.MouseBehavior.Default
+			else Enum.MouseBehavior.LockCenter
 		humanoid.AutoRotate = false
 		root.CFrame = CFrame.new(root.Position) * CFrame.fromEulerAnglesYXZ(0, yaw, 0)
 		setCharacterHidden(character, true)
@@ -152,6 +186,23 @@ local function update(hop, dt: number)
 end
 
 function SkyCamera.start(hop)
+	local playerGui = player:WaitForChild("PlayerGui")
+	local function track(item: Instance)
+		-- 창 코드는 버튼을 붙인 뒤에 Modal을 켜므로 한 박자 늦게 본다
+		task.defer(function()
+			if item:IsA("GuiButton") and item.Modal and item:IsDescendantOf(playerGui) then
+				modalButtons[item] = true
+			end
+		end)
+	end
+	for _, item in playerGui:GetDescendants() do
+		track(item)
+	end
+	playerGui.DescendantAdded:Connect(track)
+	playerGui.DescendantRemoving:Connect(function(item)
+		modalButtons[item :: GuiButton] = nil
+	end)
+
 	player.CharacterAdded:Connect(function(character)
 		local root = character:WaitForChild("HumanoidRootPart")
 		local _, characterYaw = root.CFrame:ToEulerAnglesYXZ()
@@ -183,7 +234,7 @@ function SkyCamera.start(hop)
 	UserInputService.InputChanged:Connect(function(input, processed)
 		local inputType = input.UserInputType
 		if inputType == Enum.UserInputType.MouseMovement then
-			if rotating or SkyCamera.mode == "First" then
+			if rotating or (SkyCamera.mode == "First" and not cursorFree()) then
 				local sensitivity = math.rad(CameraConfig.MouseSensitivity)
 				turn(input.Delta.X * sensitivity, input.Delta.Y * sensitivity)
 			end

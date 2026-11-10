@@ -9,6 +9,7 @@ local Audio = require(ReplicatedStorage.Config.Audio)
 local Requests = require(ReplicatedStorage.Config.Requests)
 local World = require(ReplicatedStorage.Config.World)
 local RequestLogic = require(ReplicatedStorage.Shared.RequestLogic)
+local AudioGroups = require(script.Parent.AudioGroups)
 
 local player = Players.LocalPlayer
 
@@ -16,8 +17,9 @@ local CHECK_INTERVAL = 0.5
 
 local Soundscape = {}
 
-local function sound(name: string, spec): Sound
+local function sound(name: string, spec, group: SoundGroup): Sound
 	local s = Instance.new("Sound")
+	s.SoundGroup = group
 	s.Name = name
 	s.SoundId = "rbxassetid://" .. spec.id
 	s.Looped = true
@@ -40,9 +42,9 @@ end
 function Soundscape.start(hop, requestController)
 	local music: { [string]: Sound } = {}
 	for key, spec in Audio.Music do
-		music[key] = sound("Music_" .. key, spec)
+		music[key] = sound("Music_" .. key, spec, AudioGroups.music())
 	end
-	local birds = sound("Birds", Audio.Birds)
+	local birds = sound("Birds", Audio.Birds, AudioGroups.sounds())
 	birds:Play()
 	local current: string? = nil
 	local fade = TweenInfo.new(Audio.MusicFadeSeconds, Enum.EasingStyle.Sine)

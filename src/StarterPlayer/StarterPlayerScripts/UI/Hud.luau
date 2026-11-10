@@ -105,7 +105,7 @@ local function buildFade(): Frame
 	return frame
 end
 
-function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
+function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap, settingsUi)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "SkyhopHud"
 	gui.ResetOnSpawn = false
@@ -285,6 +285,11 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
 		end
 	end
 
+	-- 설정 버튼: PC는 오른쪽 위 (O 키도 연다), 터치는 지도·시점·기록 버튼 곁에 둔다 (placeTouch)
+	local settingsButton = newButton(gui, t("ButtonSettings"), UDim2.fromOffset(120, 36), UDim2.new(1, -76, 0, 26))
+	settingsButton.Name = "SettingsButton"
+	settingsButton.Activated:Connect(settingsUi.toggle)
+
 	-- 입력 안내 (키보드)
 	if UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled then
 		newLabel(gui, {
@@ -320,7 +325,10 @@ function Hud.start(hop, skyCamera, landingMarker, vertigo, skyMap)
 			viewButton.Position = if portrait then UDim2.new(1, -58, 0, 140) else UDim2.new(1, -70, 0, 30)
 			statsButton.Position = if portrait then UDim2.new(1, -58, 0, 188) else UDim2.new(1, -176, 0, 30)
 			mapButton.Position = if portrait then UDim2.new(1, -58, 0, 92) else UDim2.new(1, -282, 0, 30)
-			statsPanel.Position = if portrait then UDim2.new(1, -12, 0, 236) else UDim2.new(1, -12, 0, 60)
+			-- 가로 화면에서 버튼 줄을 4칸으로 늘리면 작은 폰에서 가운데 고도 표시를 덮으므로 시점 버튼 아래 둘째 줄에 둔다
+			settingsButton.Size = UDim2.fromOffset(96, 40)
+			settingsButton.Position = if portrait then UDim2.new(1, -58, 0, 236) else UDim2.new(1, -70, 0, 78)
+			statsPanel.Position = if portrait then UDim2.new(1, -12, 0, 284) else UDim2.new(1, -12, 0, 106)
 			statsPanel.Size = UDim2.fromOffset(math.min(380, viewport.X - 24), 172)
 		end
 		placeTouch()
